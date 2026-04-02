@@ -1,0 +1,124 @@
+{
+  "biografia": {
+    "breve": "Artista visivo e ricercatore che lavora tra installazione, scultura e nuovi media. La sua pratica esplora il rapporto tra corpo, spazio e tecnologia, indagando le trasformazioni percettive nell'era digitale.",
+    "estesa": "Nato/a a [Città], vive e lavora tra [Città] e [Città]. Dopo una formazione in [disciplina] presso [istituzione], ha sviluppato una pratica artistica multidisciplinare che spazia dall'installazione site-specific alla scultura, dal video alla performance. Il suo lavoro si colloca all'intersezione tra arte, scienza e tecnologia, con un'attenzione particolare ai processi di trasformazione della materia e della percezione. Ha esposto in istituzioni e gallerie in Italia e all'estero, partecipando a residenze artistiche e programmi di ricerca internazionali. La sua ricerca più recente si concentra su [tema], utilizzando [materiali/tecniche] per creare ambienti immersivi che invitano lo spettatore a riconsiderare il proprio rapporto con lo spazio circostante."
+  },
+  "cv_artistico": {
+    "mostre_personali": [
+      {
+        "titolo": "Titolo Mostra Personale",
+        "luogo": "Nome Galleria, Città",
+        "anno": 2024,
+        "note": "A cura di [curatore]. Catalogo disponibile."
+      }
+    ],
+    "mostre_collettive": [
+      {
+        "titolo": "Titolo Mostra Collettiva",
+        "luogo": "Nome Spazio, Città",
+        "anno": 2023,
+        "note": "A cura di [curatore]."
+      },
+      {
+        "titolo": "Altra Mostra Collettiva",
+        "luogo": "Nome Museo, Città",
+        "anno": 2022,
+        "note": ""
+      }
+    ],
+    "residenze": [
+      {
+        "nome": "Nome Residenza Artistica",
+        "luogo": "Città, Paese",
+        "anno": 2023,
+        "durata": "3 mesi",
+        "note": "Progetto realizzato: [titolo progetto]"
+      }
+    ],
+    "premi_e_riconoscimenti": [
+      {
+        "nome": "Nome Premio / Bando Vinto",
+        "ente": "Nome Ente / Fondazione",
+        "anno": 2023,
+        "note": ""
+      }
+    ],
+    "pubblicazioni": [
+      {
+        "titolo": "Titolo Pubblicazione o Catalogo",
+        "editore": "Nome Editore",
+        "anno": 2024,
+        "tipo": "catalogo",
+        "note": "Testo di [autore]"
+      }
+    ],
+    "formazione": [
+      {
+        "titolo": "Laurea/Master in [Disciplina]",
+        "istituzione": "Nome Accademia / Università",
+        "anno": 2020,
+        "note": ""
+      }
+    ]
+  },
+  "opere": [
+    {
+      "titolo": "Titolo Opera 1",
+      "anno": 2024,
+      "tecnica": "Installazione site-specific, materiali misti",
+      "dimensioni": "Dimensioni variabili",
+      "descrizione": "L'opera esplora [concept]. Composta da [materiali], l'installazione invita lo spettatore a [esperienza]. Il lavoro nasce da una riflessione su [tema].",
+      "esposizioni": ["Nome Mostra, Galleria, 2024"]
+    },
+    {
+      "titolo": "Titolo Opera 2",
+      "anno": 2023,
+      "tecnica": "Video-installazione a 3 canali, colore, suono",
+      "dimensioni": "12'30\"",
+      "descrizione": "Video-installazione che indaga [tema]. Le tre proiezioni sincronizzate creano un ambiente immersivo in cui [descrizione esperienza].",
+      "esposizioni": ["Nome Mostra, Spazio, 2023"]
+    },
+    {
+      "titolo": "Titolo Opera 3",
+      "anno": 2022,
+      "tecnica": "Scultura, resina e pigmenti naturali",
+      "dimensioni": "120 x 80 x 45 cm",
+      "descrizione": "Serie di sculture in resina che incorporano [materiali naturali]. Il lavoro riflette su [tema], traducendo in forma tangibile [concetto].",
+      "esposizioni": []
+    }
+  ],
+  "temi_ricerca": [
+    {
+      "tema": "Corpo e Tecnologia",
+      "descrizione": "Indagine sul rapporto tra corpo fisico e ambienti digitali, esplorando come la tecnologia modifica la percezione sensoriale e la relazione con lo spazio."
+    },
+    {
+      "tema": "Materia e Trasformazione",
+      "descrizione": "Ricerca sui processi di trasformazione dei materiali — naturali e sintetici — come metafora dei cambiamenti sociali e ambientali contemporanei."
+    },
+    {
+      "tema": "Spazio e Percezione",
+      "descrizione": "Studio delle dinamiche percettive nello spazio espositivo, con attenzione alla dimensione immersiva e partecipativa dell'opera."
+    }
+  ],
+  "contatti": {
+    "email": "nome@esempio.com",
+    "sito_web": "https://www.tuosito.com",
+    "instagram": "@tuo_handle",
+    "altri_social": {
+      "behance": "",
+      "vimeo": ""
+    },
+    "studio": "Via Esempio 123, Città"
+  },
+  "note_generali": [
+    {
+      "data_inserimento": "2024-01-15",
+      "nota": "Sto lavorando a un nuovo progetto su [tema] che prevede [descrizione]. Target: completamento entro [data]."
+    },
+    {
+      "data_inserimento": "2024-02-01",
+      "nota": "Contatto interessante: [Nome] di [Galleria/Ente]. Possibile collaborazione per [progetto]."
+    }
+  ]
+}
