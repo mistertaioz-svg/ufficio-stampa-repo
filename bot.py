@@ -1,12 +1,14 @@
 """
 ArtAgent Bot — Assistente Artistico Personale su Telegram
-Usa Claude (Anthropic) come motore AI e un file JSON locale come database.
+Usa Claude (Anthropic) come motore AI e un file JSON persistente come database.
+Il database viene salvato su un Railway Volume per sopravvivere ai redeploy.
 """
 
 import os
 import json
 import logging
 import re
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -31,31 +33,20 @@ logger = logging.getLogger(__name__)
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 MY_TELEGRAM_ID = int(os.environ["MY_TELEGRAM_ID"])
-DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", "database.json"))
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+
+# ── Percorsi database ────────────────────────────────────────────────────────
+# Il volume Railway viene montato su /data.
+# Il database "vivo" sta nel volume; il file nella repo è solo il template iniziale.
+VOLUME_DIR = Path(os.environ.get("VOLUME_PATH", "/data"))
+DATABASE_PATH = VOLUME_DIR / "database.json"
+BACKUP_PATH = VOLUME_DIR / "database_backup.json"
+TEMPLATE_PATH = Path("database.json")  # template nella repo
 
 # ── Client Anthropic ─────────────────────────────────────────────────────────
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 # ── Helpers database ─────────────────────────────────────────────────────────
-
-def load_database() -> dict:
-    """Carica il database JSON dal disco."""
-    if DATABASE_PATH.exists():
-        with open(DATABASE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    logger.warning("Database non trovato, ne creo uno vuoto.")
-    empty = _empty_database()
-    save_database(empty)
-    return empty
-
-
-def save_database(data: dict) -> None:
-    """Salva il database JSON su disco."""
-    with open(DATABASE_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    logger.info("Database salvato.")
-
 
 def _empty_database() -> dict:
     return {
@@ -79,6 +70,63 @@ def _empty_database() -> dict:
         },
         "note_generali": [],
     }
+
+
+def init_database() -> None:
+    """
+    Inizializza il database sul volume persistente.
+    - Se il volume ha già un database → lo usa (dati preservati tra i deploy).
+    - Se il volume è vuoto ma la repo ha un template → lo copia nel volume.
+    - Se non esiste nulla → crea un database vuoto.
+    """
+    VOLUME_DIR.mkdir(parents=True, exist_ok=True)
+
+    if DATABASE_PATH.exists():
+        logger.info("Database trovato sul volume: %s", DATABASE_PATH)
+        return
+
+    if TEMPLATE_PATH.exists():
+        logger.info("Copio template nel volume: %s → %s", TEMPLATE_PATH, DATABASE_PATH)
+        shutil.copy2(TEMPLATE_PATH, DATABASE_PATH)
+        return
+
+    logger.info("Nessun database trovato, creo database vuoto su volume.")
+    save_database(_empty_database())
+
+
+def load_database() -> dict:
+    """Carica il database JSON dal volume persistente."""
+    try:
+        with open(DATABASE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.error("Errore caricamento database: %s — ricreo vuoto.", e)
+        empty = _empty_database()
+        save_database(empty)
+        return empty
+
+
+def save_database(data: dict) -> None:
+    """
+    Salva il database JSON sul volume persistente.
+    Prima crea un backup del file precedente per sicurezza.
+    """
+    VOLUME_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Backup automatico prima di sovrascrivere
+    if DATABASE_PATH.exists():
+        try:
+            shutil.copy2(DATABASE_PATH, BACKUP_PATH)
+        except Exception as e:
+            logger.warning("Backup fallito: %s", e)
+
+    # Scrivi su file temporaneo poi rinomina (scrittura atomica)
+    tmp_path = DATABASE_PATH.with_suffix(".tmp")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    tmp_path.replace(DATABASE_PATH)
+
+    logger.info("Database salvato su volume: %s", DATABASE_PATH)
 
 
 def database_summary(db: dict) -> str:
@@ -207,7 +255,6 @@ def _handle_update(db: dict, section: str, data) -> str:
     valore = data.get("valore", data.get("value", ""))
 
     if isinstance(target, dict) and campo:
-        # Supporto per sottocampi con punto: "breve", "estesa", ecc.
         target[campo] = valore
         return f"✅ Aggiornato '{section}.{campo}'."
     elif isinstance(target, dict):
@@ -220,7 +267,6 @@ def _handle_update(db: dict, section: str, data) -> str:
 def _handle_remove(db: dict, section: str, data) -> str:
     target = db.get(section)
     if isinstance(target, list):
-        # Cerca per match parziale delle chiavi
         before = len(target)
         db[section] = [
             item for item in target
@@ -256,15 +302,13 @@ def strip_db_update_tags(text: str) -> str:
 
 # ── Gestione conversazione ──────────────────────────────────────────────────
 
-# Cronologia messaggi per contesto conversazionale (in memoria)
 conversation_history: list[dict] = []
-MAX_HISTORY = 30  # Ultimi N messaggi
+MAX_HISTORY = 30
 
 
 def build_messages(user_text: str) -> list[dict]:
     """Costruisce la lista di messaggi per la chiamata Claude."""
     conversation_history.append({"role": "user", "content": user_text})
-    # Mantieni solo gli ultimi MAX_HISTORY messaggi
     if len(conversation_history) > MAX_HISTORY:
         del conversation_history[: len(conversation_history) - MAX_HISTORY]
     return list(conversation_history)
@@ -305,6 +349,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/start — Messaggio di benvenuto\n"
         "/help — Questa guida\n"
         "/db — Mostra un riepilogo del database\n"
+        "/export — Scarica il database come file JSON\n"
         "/reset — Cancella la cronologia della conversazione\n\n"
         "*Come usarmi:*\n"
         "Scrivimi in linguaggio naturale. Esempi:\n"
@@ -321,7 +366,6 @@ async def db_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     db = load_database()
 
-    # Conta elementi
     n_opere = len(db.get("opere", []))
     cv = db.get("cv_artistico", {})
     n_mostre = sum(len(cv.get(k, [])) for k in ("mostre_personali", "mostre_collettive"))
@@ -346,6 +390,20 @@ async def db_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     )
 
 
+async def export_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Invia il database come file JSON su Telegram."""
+    if not is_authorized(update):
+        return
+    if DATABASE_PATH.exists():
+        await update.message.reply_document(
+            document=open(DATABASE_PATH, "rb"),
+            filename=f"database_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+            caption="📦 Ecco il tuo database artistico aggiornato.",
+        )
+    else:
+        await update.message.reply_text("⚠️ Database non trovato.")
+
+
 async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
@@ -363,18 +421,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not user_text:
         return
 
-    # Indica che il bot sta "scrivendo"
     await update.message.chat.send_action("typing")
 
-    # Carica database e costruisci il prompt di sistema
     db = load_database()
     system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
-
-    # Costruisci la conversazione
     messages = build_messages(user_text)
 
     try:
-        # Chiamata a Claude
         response = client.messages.create(
             model=MODEL,
             max_tokens=4096,
@@ -384,20 +437,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
         assistant_text = response.content[0].text
 
-        # Applica eventuali aggiornamenti al database
+        # Applica aggiornamenti al database (salvati sul volume persistente)
         update_logs = apply_db_updates(assistant_text, db)
 
-        # Rimuovi i tag tecnici dal messaggio mostrato all'utente
         clean_text = strip_db_update_tags(assistant_text)
 
-        # Aggiungi log aggiornamenti se presenti
         if update_logs:
             clean_text += "\n\n" + "\n".join(update_logs)
 
-        # Registra la risposta nella cronologia
         record_assistant(assistant_text)
 
-        # Invia risposta (gestisci messaggi lunghi)
         await send_long_message(update, clean_text)
 
     except anthropic.APIError as e:
@@ -422,7 +471,6 @@ async def send_long_message(update: Update, text: str) -> None:
         if len(text) <= MAX_LEN:
             parts.append(text)
             break
-        # Cerca un punto di taglio naturale
         cut = text.rfind("\n", 0, MAX_LEN)
         if cut == -1:
             cut = text.rfind(". ", 0, MAX_LEN)
@@ -441,11 +489,11 @@ async def send_long_message(update: Update, text: str) -> None:
 def main() -> None:
     """Avvia il bot."""
     logger.info("Avvio ArtAgent Bot...")
+    logger.info("Volume path: %s", VOLUME_DIR)
+    logger.info("Database path: %s", DATABASE_PATH)
 
-    # Assicurati che il database esista
-    if not DATABASE_PATH.exists():
-        logger.info("Creo database vuoto: %s", DATABASE_PATH)
-        save_database(_empty_database())
+    # Inizializza il database sul volume persistente
+    init_database()
 
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
@@ -453,6 +501,7 @@ def main() -> None:
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("db", db_command))
+    app.add_handler(CommandHandler("export", export_command))
     app.add_handler(CommandHandler("reset", reset_command))
 
     # Messaggi di testo
