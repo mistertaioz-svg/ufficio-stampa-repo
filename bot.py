@@ -891,6 +891,10 @@ def main() -> None:
 
     app = Application.builder().token(TELEGRAM_TOKEN).build()
 
+    # Rendi la job queue accessibile globalmente (serve per il backup per inattività)
+    global _job_queue
+    _job_queue = app.job_queue
+
     # Comandi
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
@@ -905,16 +909,6 @@ def main() -> None:
 
     # PDF
     app.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
-
-    # Job giornaliero: backup alle 09:00 ora italiana
-    job_queue = app.job_queue
-    backup_hour = int(os.environ.get("BACKUP_HOUR", "7"))   # 7 UTC = 9 CEST / 8 CET
-    backup_minute = int(os.environ.get("BACKUP_MINUTE", "0"))
-    job_queue.run_daily(
-        daily_backup_job,
-        time=datetime.now().replace(hour=backup_hour, minute=backup_minute, second=0, microsecond=0).timetz(),
-    )
-    logger.info("Backup giornaliero schedulato alle %02d:%02d UTC.", backup_hour, backup_minute)
 
     # Avvia in polling
     logger.info("Bot in ascolto...")
