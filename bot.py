@@ -667,6 +667,191 @@ def record_assistant(text: str) -> None:
         del conversation_history[: len(conversation_history) - MAX_HISTORY]
 
 
+# ── Analisi post Instagram ───────────────────────────────────────────────────
+
+INSTAGRAM_EVAL_PROMPT = """\
+Hai ricevuto un post Instagram che potrebbe essere una open call.
+
+URL del post: {url}
+Caption del post:
+{caption}
+
+Analizza attentamente tutto il contenuto visibile (immagine + caption) e rispondi \
+seguendo ESATTAMENTE questo schema:
+
+VERDICT: [✅ FA PER TE / ❌ NON FA PER TE / ⚠️ INFO INSUFFICIENTI]
+
+PERCHÉ: [2-4 righe, scrivi come una persona, non come una macchina. \
+Spiega concretamente perché sì o perché no, facendo riferimento alle opere \
+e ai temi di Mirco che conosci dal database.]
+
+---
+
+Criteri di valutazione:
+- Opere di Mirco: proj_ADAM (installazione interattiva AI), Simbolica-mente, \
+  p[ai]n (videoarte, cortometraggio). Cerca affinità tematiche reali.
+- Temi centrali: IA, new media, tecnologia come scelta artistica, interattività, \
+  post-human, relazione uomo-macchina.
+- Livello: Mirco ha esposizioni internazionali (CURRENTS, RENDR). \
+  Scarta call esplicitamente riservate a "first-time" o "complete beginners".
+- Formati accettati: installazioni interattive, video art, mixed media, \
+  performance, sound art. Scarta call solo per pittura/scultura tradizionale \
+  o fotografia analogica.
+- Contesto: preferire festival/premi con visibilità internazionale o europea. \
+  Evitare contesti troppo accademici-attivisti (tipo antropologia, climate activism puro).
+
+Se l'immagine contiene testo (titolo della call, deadline, ente organizzatore) \
+leggilo e usalo nella valutazione.
+
+Se le informazioni sono insufficienti per valutare (post troppo vago, nessun \
+dettaglio sul tema o sul formato), rispondi ⚠️ INFO INSUFFICIENTI e indica \
+cosa manca.
+
+Se il verdict è ✅ FA PER TE, aggiungi OBBLIGATORIAMENTE alla fine un blocco \
+<db_update> per salvare la call nelle candidature con tutti i dettagli \
+estratti dal post. Usa stato "da valutare" e includi nelle note \
+"Trovata su Instagram — da approfondire" + URL del post.
+"""
+
+
+def _fetch_instagram_data(url: str) -> dict:
+    """
+    Fetcha i dati di un post Instagram pubblico tramite i meta tag og:.
+    Restituisce: caption, image_url, author.
+    Lancia eccezione se il post non è accessibile.
+    """
+    headers = {
+        # User-agent mobile per avere più chance di ottenere i meta tag
+        "User-Agent": (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 "
+            "Mobile/15E148 Safari/604.1"
+        ),
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        html = resp.read().decode("utf-8", errors="ignore")
+
+    og = {}
+    # Cerca meta tag in entrambi gli ordini di attributi
+    for m in re.finditer(
+        r'<meta\s+(?:[^>]*?\s+)?property=["\']og:([^"\']+)["\']'
+        r'(?:[^>]*?\s+)?content=["\']([^"\']*)["\']',
+        html, re.IGNORECASE
+    ):
+        og[m.group(1)] = m.group(2)
+    for m in re.finditer(
+        r'<meta\s+(?:[^>]*?\s+)?content=["\']([^"\']*)["\']'
+        r'(?:[^>]*?\s+)?property=["\']og:([^"\']+)["\']',
+        html, re.IGNORECASE
+    ):
+        og[m.group(2)] = m.group(1)
+
+    # Fallback: cerca la descrizione anche nei meta name="description"
+    if not og.get("description"):
+        m = re.search(
+            r'<meta\s+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
+            html, re.IGNORECASE
+        )
+        if m:
+            og["description"] = m.group(1)
+
+    return {
+        "caption": og.get("description", "").strip(),
+        "image_url": og.get("image", "").strip(),
+        "author": og.get("site_name", "Instagram"),
+    }
+
+
+async def handle_instagram_link(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    url: str,
+) -> None:
+    """Analizza un post Instagram e valuta se la open call fa per Mirco."""
+    await update.message.reply_text("🔍 Analizzo il post Instagram…")
+    await update.message.chat.send_action("typing")
+
+    # 1. Fetch dati del post
+    try:
+        post = _fetch_instagram_data(url)
+    except Exception as e:
+        logger.error("Errore fetch Instagram: %s", e)
+        await update.message.reply_text(
+            "❌ Non riesco ad accedere al post. Assicurati che sia pubblico, "
+            "oppure incollami direttamente il testo della call."
+        )
+        return
+
+    caption = post["caption"]
+    image_url = post["image_url"]
+
+    # 2. Scarica l'immagine per la vision
+    image_b64 = None
+    image_media_type = "image/jpeg"
+    if image_url:
+        try:
+            img_req = urllib.request.Request(
+                image_url,
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            with urllib.request.urlopen(img_req, timeout=10) as resp:
+                raw = resp.read()
+                ct = resp.headers.get("Content-Type", "image/jpeg").split(";")[0]
+                image_media_type = ct if ct.startswith("image/") else "image/jpeg"
+                image_b64 = base64.b64encode(raw).decode("utf-8")
+        except Exception as e:
+            logger.warning("Impossibile scaricare immagine IG: %s", e)
+
+    # 3. Costruisci il messaggio per Claude (vision se immagine disponibile)
+    eval_text = INSTAGRAM_EVAL_PROMPT.format(
+        url=url,
+        caption=caption or "(caption non disponibile)",
+    )
+
+    content: list[dict] = []
+    if image_b64:
+        content.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": image_media_type,
+                "data": image_b64,
+            },
+        })
+    content.append({"type": "text", "text": eval_text})
+
+    # 4. Chiedi a Claude la valutazione (con il database come contesto)
+    db = load_database()
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": content}],
+        )
+        assistant_text = response.content[0].text
+    except Exception as e:
+        logger.error("Errore Claude (IG eval): %s", e)
+        await update.message.reply_text(f"❌ Errore nella valutazione: {e}")
+        return
+
+    # 5. Applica eventuali db_update (solo se verdict è ✅)
+    update_logs = apply_db_updates(assistant_text, db)
+    clean_text = strip_db_update_tags(assistant_text)
+    if update_logs:
+        clean_text += "\n\n" + "\n".join(update_logs)
+
+    # Registra nella cronologia della conversazione
+    record_assistant(assistant_text)
+
+    await send_long_message(update, clean_text)
+
+
 # ── Rendering HTML per contenuti ricchi ──────────────────────────────────────
 
 HTML_TEMPLATE = """\
