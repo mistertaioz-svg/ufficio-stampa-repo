@@ -393,23 +393,20 @@
       }
     },
     {
-      "titolo": "KONTEKST Film Festival 2026 - ENTANGLEMENTS",
-      "ente": "KONTEKST Collective",
-      "luogo": "Conway Hall, 25 Red Lion Square, Londra",
-      "scadenza": "12 aprile 2026",
-      "stato": "scartata",
-      "tipo": "Festival etnografico e di cinema sperimentale",
-      "tema": "ENTANGLEMENTS — relazioni umano/non-umano, ecologia, tecnologia e potere",
-      "opera_candidata": "p[ai]n (valutata, non inviata)",
-      "note": "Tema perfettamente allineato con p[ai]n (entanglement umano-IA, Pareidolia, controllo). Scartata perché il contesto è troppo accademico-attivista e l'enfasi su 'first-time/emerging' non riflette il percorso professionale di Mirco. Da tenere come riferimento per capire il tipo di festival da evitare.",
+      "titolo": "Vox Marmoris Festival 2026",
+      "ente": "Vox Marmoris Festival",
+      "luogo": "Da definire",
+      "scadenza": "Da definire",
+      "stato": "da valutare",
+      "tipo": "Festival internazionale con projection mapping su marmo",
+      "tema": "Video, motion e digital art proiettati su monumentali mura di marmo",
+      "note": "Trovata su Instagram — da approfondire. Projection mapping su superficie architettonica, perfetto per proj_ADAM. Collaborazione con artisti internazionali. URL: https://www.instagram.com/p/DU-pA5QiGQI/",
+      "data_inserimento": "2026-04-03",
+      "opera_candidata": "proj_ADAM",
       "contatto": {
-        "sito": "kontekstcollective.com",
-        "submission_film": "FilmFreeway",
-        "submission_altro": "Google Form"
-      },
-      "date_festival": "25-26 luglio 2026",
-      "notifica_selezione": "entro 14 giugno 2026",
-      "data_inserimento": "2026-04-03"
+        "email": "info@voxmarmoris.com",
+        "instagram": "@voxmarmoris"
+      }
     }
   ]
 }
