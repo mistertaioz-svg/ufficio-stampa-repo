@@ -65,6 +65,10 @@ client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 _job_queue = None
 _pending_backup_job = None
 
+# ── Rimozioni in attesa di conferma ──────────────────────────────────────────
+# Ogni elemento: {"section": str, "data": dict, "description": str}
+_pending_removes: list[dict] = []
+
 # ── Helpers database ─────────────────────────────────────────────────────────
 
 def _empty_database() -> dict:
