@@ -980,6 +980,8 @@ async def handle_extra_url(
     if update_logs:
         clean_text += "\n\n" + "\n".join(update_logs)
 
+    # Registra entrambi i turni nella cronologia
+    conversation_history.append({"role": "user", "content": f"[Analisi open call — {extra_url}]"})
     record_assistant(assistant_text)
     await send_long_message(update, clean_text)
 
