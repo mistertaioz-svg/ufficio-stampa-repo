@@ -61,6 +61,11 @@ BACKUP_INACTIVITY_HOURS = float(os.environ.get("BACKUP_INACTIVITY_HOURS", "6"))
 # ── Client Anthropic ─────────────────────────────────────────────────────────
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+# ── Pattern URL Instagram ─────────────────────────────────────────────────────
+IG_URL_PATTERN = re.compile(
+    r"https?://(?:www\.)?instagram\.com/(?:p|reel)/([A-Za-z0-9_\-]+)/?"
+)
+
 # ── Job queue globale (inizializzata in main) ─────────────────────────────────
 _job_queue = None
 _pending_backup_job = None
