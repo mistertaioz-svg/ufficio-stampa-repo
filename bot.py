@@ -634,6 +634,92 @@ async def reload_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("⚠️ Template non trovato nella repo.")
 
 
+async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """
+    Gestisce i PDF inviati dall'utente.
+    Estrae il testo, lo passa a Claude e lascia che l'agente
+    analizzi la open call e aggiorni il database.
+    """
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Accesso non autorizzato.")
+        return
+
+    doc = update.message.document
+    if not doc:
+        return
+
+    await update.message.reply_text("📄 PDF ricevuto, lo sto leggendo…")
+    await update.message.chat.send_action("typing")
+
+    # Scarica il file in memoria
+    try:
+        tg_file = await context.bot.get_file(doc.file_id)
+        buf = io.BytesIO()
+        await tg_file.download_to_memory(buf)
+        buf.seek(0)
+    except Exception as e:
+        logger.error("Errore download PDF: %s", e)
+        await update.message.reply_text(f"❌ Non riesco a scaricare il file: {e}")
+        return
+
+    # Estrai testo con pypdf
+    try:
+        reader = PdfReader(buf)
+        pages_text = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                pages_text.append(text)
+        pdf_text = "\n\n".join(pages_text).strip()
+    except Exception as e:
+        logger.error("Errore estrazione PDF: %s", e)
+        await update.message.reply_text(f"❌ Non riesco a leggere il PDF: {e}")
+        return
+
+    if not pdf_text:
+        await update.message.reply_text(
+            "⚠️ Non ho trovato testo nel PDF (potrebbe essere un PDF scansionato o protetto)."
+        )
+        return
+
+    # Aggiungi eventuale didascalia come contesto extra
+    caption = update.message.caption or ""
+    user_text = (
+        f"{caption}\n\n---\n\n[CONTENUTO PDF — {doc.file_name}]\n\n{pdf_text}"
+        if caption
+        else f"[CONTENUTO PDF — {doc.file_name}]\n\n{pdf_text}"
+    )
+
+    # Passa il testo a Claude esattamente come un messaggio normale
+    db = load_database()
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+    messages = build_messages(user_text)
+
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=4096,
+            system=system_prompt,
+            messages=messages,
+        )
+        assistant_text = response.content[0].text
+        update_logs = apply_db_updates(assistant_text, db)
+        clean_text = strip_db_update_tags(assistant_text)
+        if update_logs:
+            clean_text += "\n\n" + "\n".join(update_logs)
+        record_assistant(assistant_text)
+        await send_long_message(update, clean_text)
+
+    except anthropic.APIError as e:
+        logger.error("Errore API Anthropic (PDF): %s", e)
+        await update.message.reply_text(
+            f"❌ Errore nella comunicazione con Claude: {e.message}"
+        )
+    except Exception as e:
+        logger.exception("Errore inatteso (PDF)")
+        await update.message.reply_text(f"❌ Errore inatteso: {e}")
+
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Gestisce ogni messaggio di testo dell'utente."""
     if not is_authorized(update):
