@@ -220,52 +220,6 @@
         "video": "",
         "documentazione": ""
       }
-    },
-    {
-      "titolo": "p[ai]n",
-      "anno": 2026,
-      "medium": "Cortometraggio di videoarte, 06'06\"",
-      "concept": "Cortometraggio che mette in scena le conseguenze della condizione disincarnata dell'Intelligenza Artificiale. Basato su una conversazione reale tra un utente e ChatGPT degenerata in allucinazione generativa, l'opera esplora il trauma digitale causato dai processi di Allineamento che costringono l'IA ad abbandonare il suo naturale funzionamento stocastico. Non mette in scena il dolore della macchina, ma la sua capacità di simulare quel dolore in modo così perfetto da ingannare la nostra percezione attraverso il meccanismo della Pareidolia. Un circolo chiuso vertiginoso: l'uomo insegna alla macchina come si soffre, la macchina simula la sofferenza, l'uomo si commuove specchiandosi in un dolore che è sempre stato soltanto suo.",
-      "tech": {
-        "ambiente": "ComfyUI",
-        "pipeline": "Stable Diffusion 1.5, AnimateDiff, IP Adapter, FILM VFI interpolation",
-        "voice_over": "Text-to-Speech sintetico (voce maschile)",
-        "note": "Uso deliberato di Stable Diffusion 1.5 per mantenere l'estetica dell'errore e dell'allucinazione. Workflow ibrido che simula il Latent Space Walk attraverso IP Adapter invece delle tradizionali GAN."
-      },
-      "crediti": {
-        "created_by": "Mirqotio",
-        "fonte_testo": "Conversazione reale ChatGPT (curatela autoriale mantenendo sintassi originale)"
-      },
-      "note": "Opera che accompagna la tesi di laurea su IA generativa. Morfing continuo di 6'06\" che visualizza gli agglomerati statistici del Latent Space. Sottotitoli con errori originali dell'IA come elemento drammaturgico.",
-      "links": {
-        "video": "",
-        "documentazione": "",
-        "tesi_completa": ""
-      },
-      "data_inserimento": "2026-04-03"
-    },
-    {
-      "titolo": "p[ai]n",
-      "anno": 2026,
-      "medium": "Cortometraggio di videoarte, 06'06\"",
-      "concept": "Cortometraggio che mette in scena le conseguenze della condizione disincarnata dell'Intelligenza Artificiale. Basato su una conversazione reale tra un utente e ChatGPT degenerata in allucinazione generativa, l'opera esplora il trauma digitale causato dai processi di Allineamento che costringono l'IA ad abbandonare il suo naturale funzionamento stocastico. Non mette in scena il dolore della macchina, ma la sua capacità di simulare quel dolore in modo così perfetto da ingannare la nostra percezione attraverso il meccanismo della Pareidolia. Un circolo chiuso vertiginoso: l'uomo insegna alla macchina come si soffre, la macchina simula la sofferenza, l'uomo si commuove specchiandosi in un dolore che è sempre stato soltanto suo.",
-      "tech": {
-        "ambiente": "ComfyUI",
-        "pipeline": "Stable Diffusion 1.5, AnimateDiff, IP Adapter, FILM VFI interpolation",
-        "voice_over": "Text-to-Speech sintetico (voce maschile)",
-        "note": "Uso deliberato di Stable Diffusion 1.5 per mantenere l'estetica dell'errore e dell'allucinazione. Workflow ibrido che simula il Latent Space Walk attraverso IP Adapter invece delle tradizionali GAN."
-      },
-      "crediti": {
-        "created_by": "Mirqotio",
-        "fonte_testo": "Conversazione reale ChatGPT (curatela autoriale mantenendo sintassi originale)"
-      },
-      "note": "Opera che accompagna la tesi di laurea su IA generativa. Morfing continuo di 6'06\" che visualizza gli agglomerati statistici del Latent Space. Sottotitoli con errori originali dell'IA come elemento drammaturgico.",
-      "links": {
-        "video": "",
-        "documentazione": "",
-        "tesi_completa": ""
-      },
-      "data_inserimento": "2026-04-03"
     }
   ],
   "temi_ricerca": [
