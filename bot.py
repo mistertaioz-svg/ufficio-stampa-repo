@@ -892,7 +892,8 @@ async def handle_instagram_link(
     if update_logs:
         clean_text += "\n\n" + "\n".join(update_logs)
 
-    # Registra nella cronologia della conversazione
+    # Registra ENTRAMBI i turni nella cronologia così i follow-up funzionano
+    conversation_history.append({"role": "user", "content": f"[Analisi open call — {url}]"})
     record_assistant(assistant_text)
 
     await send_long_message(update, clean_text)
