@@ -185,8 +185,13 @@ Sezioni valide: profilo, biografia, cv_artistico, opere, temi_ricerca, lavori, c
 
 Per "add" ad una lista (es. opere, mostre, temi_ricerca, lavori, candidature), \
 "data" è l'elemento da aggiungere.
-Per "update" su un campo (es. biografia.statement), "data" contiene \
+Per "add" ad una sottosezione lista dentro un dizionario (es. cv_artistico.mostre), \
+"data" deve includere "sottosezione": "mostre" più i campi dell'elemento.
+Per "update" su un campo di una sezione dizionario (es. biografia.statement), "data" contiene \
 il percorso e il nuovo valore: {{"campo": "statement", "valore": "nuovo testo"}}.
+Per "update" di un elemento dentro una lista (es. opere, lavori, candidature), \
+"data" deve contenere "match" (criterio per trovare l'elemento) e "updates" \
+(campi da aggiornare): {{"match": {{"titolo": "Nome opera"}}, "updates": {{"stato": "inviata"}}}}.
 Per "remove" da una lista, "data" contiene un criterio di ricerca: \
 {{"titolo": "Opera da rimuovere"}}.
 
@@ -297,11 +302,40 @@ def _handle_update(db: dict, section: str, data) -> str:
     valore = data.get("valore", data.get("value", ""))
 
     if isinstance(target, dict) and campo:
+        # Aggiorna un sotto-campo di una sezione dizionario
+        # Supporta campi annidati con punto: "sottosezione.campo"
+        parts = campo.split(".", 1)
+        if len(parts) == 2 and parts[0] in target and isinstance(target[parts[0]], dict):
+            target[parts[0]][parts[1]] = valore
+            return f"✅ Aggiornato '{section}.{campo}'."
         target[campo] = valore
         return f"✅ Aggiornato '{section}.{campo}'."
     elif isinstance(target, dict):
         target.update(data)
         return f"✅ Aggiornato '{section}'."
+    elif isinstance(target, list):
+        # Aggiorna un elemento in una lista trovandolo per "match" e applicando "updates"
+        match_criteria = data.get("match", {})
+        updates = data.get("updates", {})
+        if not match_criteria or not updates:
+            # Fallback: se non c'è match/updates, prova campo/valore su tutti gli elementi
+            if campo:
+                updated = 0
+                for item in target:
+                    if isinstance(item, dict) and _matches(item, match_criteria or data):
+                        item[campo] = valore
+                        updated += 1
+                if updated:
+                    return f"✅ Aggiornato {updated} elemento/i in '{section}'."
+            return f"⚠️ Non so come aggiornare '{section}' con i dati forniti."
+        updated = 0
+        for item in target:
+            if isinstance(item, dict) and _matches(item, match_criteria):
+                item.update(updates)
+                updated += 1
+        if updated:
+            return f"✅ Aggiornato {updated} elemento/i in '{section}'."
+        return f"⚠️ Nessun elemento trovato in '{section}' con i criteri specificati."
     else:
         return f"⚠️ Non so come aggiornare '{section}' con i dati forniti."
 
