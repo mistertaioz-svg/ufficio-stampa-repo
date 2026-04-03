@@ -285,5 +285,32 @@
       }
     }
   ],
-  "candidature": []
+  "candidature": [
+    {
+      "titolo": "Electric Theater Festival 2026 - Augmented Futures",
+      "ente": "Electric Theater Festival",
+      "luogo": "Panicale (PG), Italy",
+      "scadenza": "30 aprile 2026",
+      "stato": "inviata",
+      "tipo": "Interactive installations & audiovisual compositions",
+      "tema": "Augmented Futures - Shaping the city through human interaction",
+      "note": "Call per installazioni interattive e composizioni audiovisive. Interactive Garden, focus su site-specific con componente digitale/tecnologica e modalità interattiva. Deadline 30 aprile, notifica 15 maggio, installazione 4-6 giugno 2026. Venue outdoor, equipaggiamento self-contained, supporto tecnico disponibile.",
+      "data_inserimento": "2026-04-03",
+      "opera": "proj_ADAM",
+      "instagram": "https://www.instagram.com/electric_theater/"
+    },
+    {
+      "titolo": "Electric Theater Festival 2026 - Augmented Futures",
+      "ente": "Electric Theater Festival",
+      "luogo": "Panicale (PG), Italy",
+      "scadenza": "30 aprile 2026",
+      "stato": "in preparazione",
+      "tipo": "Interactive installations & audiovisual compositions",
+      "tema": "Augmented Futures - Shaping the city through human interaction",
+      "note": "Call per installazioni interattive e composizioni audiovisive. Interactive Garden, focus su site-specific con componente digitale/tecnologica e modalità interattiva. Deadline 30 aprile, notifica 15 maggio, installazione 4-6 giugno 2026. Venue outdoor, equipaggiamento self-contained, supporto tecnico disponibile.",
+      "data_inserimento": "2025-01-27",
+      "opera": "",
+      "instagram": "https://www.instagram.com/electric_theater/"
+    }
+  ]
 }
