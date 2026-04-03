@@ -984,6 +984,39 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not user_text:
         return
 
+    # ── Gestione conferma rimozioni in sospeso ────────────────────────────────
+    if _pending_removes:
+        answer = user_text.strip().lower()
+        confirmed = answer in ("sì", "si", "yes", "sì, elimina", "si, elimina",
+                               "confermo", "ok elimina", "elimina")
+        denied = answer in ("no", "annulla", "no, annulla", "non eliminare")
+
+        if confirmed:
+            db = load_database()
+            removed_labels = []
+            for op in _pending_removes:
+                _handle_remove(db, op["section"], op["data"])
+                label = (
+                    op["data"].get("titolo") or op["data"].get("nome") or
+                    op["data"].get("campo") or str(op["data"])[:40]
+                )
+                removed_labels.append(f"'{label}' da '{op['section']}'")
+            save_database(db)
+            _pending_removes.clear()
+            await update.message.reply_text(
+                "🗑️ Eliminato: " + ", ".join(removed_labels)
+            )
+            return
+
+        elif denied:
+            _pending_removes.clear()
+            await update.message.reply_text("✅ Eliminazione annullata. Non ho toccato nulla.")
+            return
+
+        else:
+            # Messaggio normale mentre c'era una rimozione in sospeso: annulla silenziosamente
+            _pending_removes.clear()
+
     await update.message.chat.send_action("typing")
 
     db = load_database()
