@@ -1,0 +1,302 @@
+{
+  "profilo": {
+    "nome": "Mirco Tiozzo",
+    "nome_arte": "Mirqotio",
+    "citta": "Milano",
+    "discipline": "New Media Artist, Creative Technologist, AI Artist",
+    "sito_web": "https://mirqotio.framer.website",
+    "email": "mircotiozzo@icloud.com",
+    "instagram": "@mirqotio",
+    "links": {
+      "portfolio": "",
+      "press_kit": "",
+      "foto_artista": "",
+      "showreel": ""
+    }
+  },
+  "biografia": {
+    "statement": "Il mio lavoro nasce dalla volontà di trovare nuovi modi per raccontare come viviamo il mondo e come percepiamo che gli altri lo vivano intorno a noi. Costruisco spazi in cui le persone si fermano, incontrano qualcosa di inaspettato e portano via con sé una riflessione che prima non avevano.",
+    "bio": "Mirco Tiozzo (Mirqotio) è un artista e creative technologist basato a Milano. Lavora tra arte generativa, installazioni interattive e intelligenza artificiale. La sua ricerca parte da una fascinazione per la tecnologia come forza che cambia il modo in cui ci percepiamo e ci relazioniamo al mondo. Il suo lavoro spazia dalle installazioni site-specific alla performance, utilizzando strumenti come il real-time AI mapping per creare esperienze in cui tecnologia e presenza umana si incontrano. Ha esposto in Italia e a livello internazionale, tra cui il CURRENTS New Media Festival (Santa Fe) e il RENDR Festival (Belfast).",
+    "identita_artistica": "La tecnologia per Mirco è empowering e democratica, l'unica realtà alternativa che conosciamo. C'è sempre qualcosa di nuovo da imparare e questo genera uno stupore costante. Il suo approccio è pratico e intuitivo, fondato sulla sperimentazione continua e sul confronto con ciò che lo circonda. Non teorico. Non c'è differenza tra arte personale e lavoro per clienti, tutto è espressione. Quello che lo rende fiero è quando le persone percepiscono esattamente quello che l'opera dovrebbe trasmettere, si fermano per la straordinarietà e restano per la profondità del concept. Attualmente si trova in una fase di professionalizzazione: consolidare competenze, costruire una base solida. Molte direzioni possibili, nessuna ancora definitiva."
+  },
+  "cv_artistico": {
+    "formazione": [
+      {
+        "titolo": "Fotografia",
+        "istituzione": "Istituto G. Falcone, Gallarate",
+        "tipo": "Diploma superiore",
+        "anni": "2016–2020"
+      },
+      {
+        "titolo": "Digital Communication",
+        "istituzione": "ITS A. Rizzoli",
+        "tipo": "Diploma ITS",
+        "anni": "2020–2022"
+      },
+      {
+        "titolo": "Cinema",
+        "istituzione": "NABA Milano",
+        "tipo": "Laurea triennale",
+        "anni": "2022–2026",
+        "note": "Tesi su IA generativa"
+      }
+    ],
+    "mostre": [
+      {
+        "titolo": "RENDR Festival",
+        "anno": 2026,
+        "tipo": "Festival internazionale",
+        "spazio": "RENDR Festival",
+        "citta": "Belfast, UK",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "Gate Milano x Novocaine",
+        "anno": 2026,
+        "tipo": "Evento",
+        "spazio": "Gate Milano",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "CURRENTS New Media Festival",
+        "anno": 2025,
+        "tipo": "Festival internazionale",
+        "spazio": "CURRENTS New Media",
+        "citta": "Santa Fe, New Mexico, USA",
+        "opera": "proj_ADAM",
+        "note": "Prima selezione internazionale."
+      },
+      {
+        "titolo": "Sblender Festival",
+        "anno": 2025,
+        "tipo": "Festival",
+        "spazio": "Sblender Festival",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "Beehive Fest",
+        "anno": 2025,
+        "tipo": "Festival",
+        "spazio": "Beehive Fest",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "CT Support",
+        "anno": 2025,
+        "tipo": "Evento",
+        "spazio": "CT Support",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "Hangover",
+        "anno": 2025,
+        "tipo": "Evento",
+        "spazio": "Hangover",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "Simbolica-mente @ NAO Performing Festival",
+        "anno": 2025,
+        "tipo": "Festival",
+        "spazio": "NAO Performing Festival",
+        "citta": "Milano",
+        "opera": "Simbolica-mente"
+      },
+      {
+        "titolo": "Simbolica-mente @ DiD Studio",
+        "anno": 2025,
+        "tipo": "Restituzione residenza",
+        "spazio": "DiD Studio",
+        "citta": "Milano",
+        "opera": "Simbolica-mente"
+      },
+      {
+        "titolo": "Tempio del Futuro Perduto",
+        "anno": 2024,
+        "tipo": "Prima esposizione",
+        "spazio": "Tempio del Futuro Perduto",
+        "citta": "Milano",
+        "opera": "proj_ADAM",
+        "note": "Prima esposizione di proj_ADAM. Il 16 giugno 2024."
+      },
+      {
+        "titolo": "StudioSolareHUB",
+        "anno": 2024,
+        "tipo": "Evento",
+        "spazio": "StudioSolareHUB",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "Dafne Events",
+        "anno": 2024,
+        "tipo": "Evento",
+        "spazio": "Dafne Events",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "CT Support",
+        "anno": 2024,
+        "tipo": "Evento",
+        "spazio": "CT Support",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "NoMansLand",
+        "anno": 2024,
+        "tipo": "Evento",
+        "spazio": "NoMansLand",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      },
+      {
+        "titolo": "MIgarden",
+        "anno": 2024,
+        "tipo": "Evento",
+        "spazio": "MIgarden",
+        "citta": "Milano",
+        "opera": "proj_ADAM"
+      }
+    ],
+    "residenze": [
+      {
+        "titolo": "DiD Studio",
+        "anno": 2025,
+        "luogo": "Milano",
+        "progetto": "Simbolica-mente",
+        "note": "Residenza artistica con Emanuele Travaini. Sviluppo della performance Simbolica-mente."
+      }
+    ],
+    "premi_e_riconoscimenti": [],
+    "grants": []
+  },
+  "opere": [
+    {
+      "titolo": "proj_ADAM",
+      "anno": 2024,
+      "medium": "Installazione interattiva, real-time AI image-to-image",
+      "concept": "Ispirata al versetto biblico sulla creazione dell'uomo a immagine di Dio, proj_ADAM esplora le implicazioni di un mondo in cui la tecnologia non è più solo uno strumento al servizio dell'uomo, ma un potenziale sostituto della divinità stessa. In un momento in cui intelligenza artificiale e realtà virtuale ridefiniscono i confini dell'esistenza, proj_ADAM pone una domanda fondamentale: nell'assimilare la tecnologia come parte integrante di noi stessi, stiamo riscrivendo l'essenza stessa dell'umanità?",
+      "tech": {
+        "ambiente": "TouchDesigner (locale)",
+        "pipeline": "Real-time Image-to-Image via StreamDiffusionTD",
+        "hardware": "Webcam sferica",
+        "note": "Il sistema è calibrato deliberatamente a 18-20 FPS, mantenendo fluidità e permettendo alle allucinazioni generate dall'IA di persistere abbastanza da essere percepite, creando una persistenza della visione simile al sogno. L'input video viene catturato attraverso una webcam sferica per richiamare un occhio meccanico."
+      },
+      "crediti": {
+        "created_by": "Mirqotio"
+      },
+      "note": "Prima opera. Site-specific, dimensioni variabili.",
+      "links": {
+        "foto": "",
+        "video": "",
+        "documentazione": ""
+      }
+    },
+    {
+      "titolo": "Simbolica-mente",
+      "anno": 2025,
+      "medium": "Performance di danza con real-time AI body mapping",
+      "concept": "Performance di teatro-danza che mette in scena il viaggio interiore del sé attraverso miti, simboli e le sfide dell'inconscio. Ispirata alla teoria del Viaggio dell'Eroe, accompagna il pubblico in tre atti: la Chiamata al Risveglio, l'Iniziazione nel mondo dei simboli e il Ritorno con una nuova consapevolezza. Il protagonista affronta frammentazione, dialoghi interiori, prove e trasformazioni, esplorando il conflitto tra ego, potenziale e autenticità.",
+      "tech": {
+        "ambiente": "TouchDesigner (server centralizzato)",
+        "pipeline": "Real-time AI Body Mapping via StreamDiffusion, timeline ibrida con sync e generazione live",
+        "hardware": "TOF Camera, Long-Throw Projector, HDMI Matrix, Audio Interface",
+        "setup": "4 output sincronizzati: 3 display per contenuti narrativi pre-renderizzati, 1 proiezione principale per augmentation in tempo reale sul corpo del performer"
+      },
+      "crediti": {
+        "visual_artist": "Mirco Tiozzo",
+        "performer_artist": "Emanuele Travaini"
+      },
+      "note": "Nata dalla residenza al DiD Studio di Milano. La texture generata dall'IA viene proiettata sul corpo in movimento con calibrazione precisa, creando una seconda pelle digitale che aderisce al performer.",
+      "links": {
+        "foto": "",
+        "video": "",
+        "documentazione": ""
+      }
+    },
+    {
+      "titolo": "Tesi su IA generativa",
+      "anno": 2025,
+      "medium": "Ricerca / Scrittura accademica",
+      "concept": "Ricerca nata da una crisi vissuta nel rapporto con gli strumenti di IA generativa, dalla fascinazione iniziale, attraverso l'uso quotidiano, fino a una rielaborazione critica. Non un'analisi teorica: una elaborazione di qualcosa vissuto in prima persona.",
+      "note": "Tesi di laurea triennale in Cinema, NABA Milano.",
+      "links": {
+        "documento": ""
+      }
+    }
+  ],
+  "temi_ricerca": [
+    {
+      "tema": "Coesistenza identità-tecnologia",
+      "descrizione": "Come la tecnologia si intreccia con l'identità umana, dove i confini si confondono e si ridefiniscono a vicenda."
+    },
+    {
+      "tema": "Intelligenza artificiale come territorio creativo",
+      "descrizione": "L'IA come strumento e materia espressiva allo stesso tempo. Qualcosa di nuovo che vale la pena interrogare, comprendere nella sua essenza, e usare consapevolmente."
+    }
+  ],
+  "lavori": [
+    {
+      "titolo": "545 x Garage Italia",
+      "anno": 2025,
+      "tipo": "Projection mapping, architectural",
+      "cliente": "545 (5th Anniversary Event)",
+      "descrizione": "La facciata in vetro di Garage Italia è stata trasformata in una tela dinamica di 30x5 metri, segmentata in 175 moduli di vetro (35x5). L'intero show è stato pre-visualizzato con una ricreazione 3D dell'architettura in TouchDesigner, testando il comportamento dei contenuti sulla risoluzione specifica 3840x800 da remoto. I telai delle finestre sono stati trattati non come ostacoli ma come elemento ritmico, fondendo branding ad alto impatto con visual generativi fluidi che rispettavano l'identità del brand.",
+      "tech": {
+        "ambiente": "TouchDesigner",
+        "pipeline": "3D Pre-visualization, Architectural Mapping",
+        "hardware": "Computer, Projector"
+      },
+      "crediti": {
+        "visual_artist": "Mirco Tiozzo",
+        "event_coordinator": "BeeHive Therapy"
+      },
+      "luogo": "Garage Italia, Milano",
+      "links": {
+        "foto": "",
+        "video": ""
+      }
+    },
+    {
+      "titolo": "UTR x Tunnel Club",
+      "anno": 2025,
+      "tipo": "Live visuals, audio-reactive AI",
+      "cliente": "UndergroundTechnoResearch",
+      "descrizione": "Adattamento della tecnologia di proj_ADAM in uno strumento di live visual per la scena techno. Sviluppato un framework custom in TouchDesigner che pilota StreamDiffusion in tempo reale, rendendo il processo generativo completamente audio-reattivo. Il sistema analizza le frequenze musicali per modulare i loop generativi, e l'IA rigenera tutto sincronizzando il visual con il beat. Innovazione chiave: uso del sensore infrarosso Kinect per catturare il DJ nell'oscurità totale del club, alimentando la rete neurale che rigenera l'immagine del DJ come entità digitale pulsante che si trasforma live sullo schermo.",
+      "tech": {
+        "ambiente": "TouchDesigner",
+        "pipeline": "Audio-Reactive StreamDiffusion, Infrared Computer Vision",
+        "hardware": "Computer, Projector, Kinect"
+      },
+      "crediti": {
+        "visual_artist": "Mirco Tiozzo"
+      },
+      "luogo": "Tunnel Club, Milano",
+      "links": {
+        "foto": "",
+        "video": ""
+      }
+    }
+  ],
+  "candidature": [
+    {
+      "titolo": "Electric Theater Festival 2026 - Augmented Futures",
+      "ente": "Electric Theater Festival",
+      "luogo": "Interactive Garden, Panicale (PG), Italia",
+      "scadenza": "30 aprile 2026",
+      "stato": "inviata",
+      "tipo": "Call for Interactive Installations & Audiovisual Compositions",
+      "tema": "Augmented Futures - Shaping the city through human interaction",
+      "note": "Candidatura inviata per proj_ADAM. Festival cerca installazioni interattive site-specific. Tema perfetto: Panicale come organismo sensibile che evolve attraverso l'interazione umana. Timeline: notifica artisti selezionati 15 maggio 2026, installazione 4-6 giugno 2026. Contatto: electrictheaterandsymbols@gmail.com",
+      "data_inserimento": "2026-04-03",
+      "opera_candidata": "proj_ADAM"
+    }
+  ]
+}
