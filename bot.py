@@ -630,6 +630,66 @@ def record_assistant(text: str) -> None:
         del conversation_history[: len(conversation_history) - MAX_HISTORY]
 
 
+# ── Rendering HTML per contenuti ricchi ──────────────────────────────────────
+
+HTML_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArtAgent</title>
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          max-width: 900px; margin: 40px auto; padding: 0 20px;
+          color: #1a1a1a; line-height: 1.6; background: #fafafa; }}
+  h1, h2, h3 {{ color: #111; margin-top: 1.4em; }}
+  table {{ border-collapse: collapse; width: 100%; margin: 1.2em 0;
+           box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: #fff; }}
+  th {{ background: #1a1a1a; color: #fff; padding: 10px 14px;
+        text-align: left; font-weight: 600; }}
+  td {{ padding: 9px 14px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }}
+  tr:last-child td {{ border-bottom: none; }}
+  tr:nth-child(even) {{ background: #f5f5f5; }}
+  tr:hover {{ background: #eef; }}
+  code {{ background: #f0f0f0; padding: 2px 6px; border-radius: 3px;
+          font-family: 'SF Mono', monospace; font-size: 0.9em; }}
+  pre {{ background: #f0f0f0; padding: 14px; border-radius: 6px; overflow-x: auto; }}
+  blockquote {{ border-left: 3px solid #ccc; margin: 0; padding-left: 16px; color: #555; }}
+  .footer {{ margin-top: 40px; font-size: 0.8em; color: #999; border-top: 1px solid #eee;
+             padding-top: 12px; }}
+</style>
+</head>
+<body>
+{body}
+<div class="footer">Generato da ArtAgent · {timestamp}</div>
+</body>
+</html>
+"""
+
+
+def _has_table(text: str) -> bool:
+    """Rileva se il testo contiene almeno una tabella markdown."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if "|" in line and i + 1 < len(lines) and re.match(r"[\s|:\-]+", lines[i + 1]):
+            return True
+    return False
+
+
+def markdown_to_html_file(text: str) -> io.BytesIO:
+    """Converte il testo markdown in un file HTML stilizzato, restituisce un buffer."""
+    body = md_lib.markdown(
+        text,
+        extensions=["tables", "fenced_code", "nl2br", "sane_lists"],
+    )
+    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+    html = HTML_TEMPLATE.format(body=body, timestamp=timestamp)
+    buf = io.BytesIO(html.encode("utf-8"))
+    buf.name = f"artAgent_{datetime.now().strftime('%Y%m%d_%H%M')}.html"
+    return buf
+
+
 # ── Handlers Telegram ────────────────────────────────────────────────────────
 
 def is_authorized(update: Update) -> bool:
