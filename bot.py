@@ -873,6 +873,7 @@ def main() -> None:
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("db", db_command))
     app.add_handler(CommandHandler("export", export_command))
+    app.add_handler(CommandHandler("backup", backup_command))
     app.add_handler(CommandHandler("reset", reset_command))
     app.add_handler(CommandHandler("reload", reload_command))
 
@@ -881,6 +882,16 @@ def main() -> None:
 
     # PDF
     app.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
+
+    # Job giornaliero: backup alle 09:00 ora italiana
+    job_queue = app.job_queue
+    backup_hour = int(os.environ.get("BACKUP_HOUR", "7"))   # 7 UTC = 9 CEST / 8 CET
+    backup_minute = int(os.environ.get("BACKUP_MINUTE", "0"))
+    job_queue.run_daily(
+        daily_backup_job,
+        time=datetime.now().replace(hour=backup_hour, minute=backup_minute, second=0, microsecond=0).timetz(),
+    )
+    logger.info("Backup giornaliero schedulato alle %02d:%02d UTC.", backup_hour, backup_minute)
 
     # Avvia in polling
     logger.info("Bot in ascolto...")
