@@ -96,17 +96,86 @@ def _empty_database() -> dict:
     }
 
 
+def _fetch_github_database() -> dict | None:
+    """
+    Scarica il database dal branch 'data' di GitHub.
+    Restituisce il dict se riesce, None altrimenti.
+    """
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return None
+    BACKUP_BRANCH = os.environ.get("GITHUB_DATA_BRANCH", "data")
+    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_DB_PATH}?ref={BACKUP_BRANCH}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "User-Agent": "ArtAgent-Bot",
+    }
+    try:
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            file_info = json.loads(resp.read())
+            content = base64.b64decode(file_info["content"]).decode("utf-8")
+            return json.loads(content)
+    except Exception as e:
+        logger.warning("Impossibile scaricare database da GitHub: %s", e)
+        return None
+
+
 def init_database() -> None:
     """
     Inizializza il database sul volume persistente.
-    - Se il volume ha già un database → lo usa (dati preservati tra i deploy).
-    - Se il volume è vuoto ma la repo ha un template → lo copia nel volume.
-    - Se non esiste nulla → crea un database vuoto.
+    - Se il volume ha già un database, controlla che non sia più vuoto/povero
+      del backup su GitHub (sicurezza contro reset accidentali del Volume).
+    - Se il volume è vuoto, prova a ripristinare da GitHub, poi dal template, poi crea vuoto.
     """
     VOLUME_DIR.mkdir(parents=True, exist_ok=True)
 
     if DATABASE_PATH.exists():
-        logger.info("Database trovato sul volume: %s", DATABASE_PATH)
+        local_db = load_database()
+        local_count = sum([
+            len(local_db.get("opere", [])),
+            len(local_db.get("candidature", [])),
+            len(local_db.get("cv_artistico", {}).get("mostre", [])),
+        ])
+
+        # Se il volume sembra svuotato, confronta con GitHub
+        if local_count == 0:
+            logger.warning("Volume sembra vuoto, controllo backup GitHub…")
+            github_db = _fetch_github_database()
+            if github_db:
+                github_count = sum([
+                    len(github_db.get("opere", [])),
+                    len(github_db.get("candidature", [])),
+                    len(github_db.get("cv_artistico", {}).get("mostre", [])),
+                ])
+                if github_count > 0:
+                    logger.warning(
+                        "Volume svuotato (0 elementi), ripristino da GitHub (%d elementi).",
+                        github_count,
+                    )
+                    # Salva senza triggerare un nuovo push (scrittura diretta)
+                    tmp_path = DATABASE_PATH.with_suffix(".tmp")
+                    with open(tmp_path, "w", encoding="utf-8") as f:
+                        json.dump(github_db, f, ensure_ascii=False, indent=2)
+                    tmp_path.replace(DATABASE_PATH)
+                    logger.info("Database ripristinato da GitHub.")
+                    return
+
+        logger.info("Database trovato sul volume (%d elementi chiave).", local_count)
+        return
+
+    # Volume completamente vuoto: prova GitHub, poi template, poi vuoto
+    logger.warning("Nessun database sul volume, tento ripristino da GitHub…")
+    github_db = _fetch_github_database()
+    if github_db and any([
+        github_db.get("opere"), github_db.get("candidature"),
+        github_db.get("cv_artistico", {}).get("mostre"),
+    ]):
+        tmp_path = DATABASE_PATH.with_suffix(".tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(github_db, f, ensure_ascii=False, indent=2)
+        tmp_path.replace(DATABASE_PATH)
+        logger.info("Database ripristinato da GitHub al primo avvio.")
         return
 
     if TEMPLATE_PATH.exists():

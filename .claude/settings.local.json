@@ -16,7 +16,11 @@
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "Bash(git commit:*)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''''Profilo:'''', d.get\\(''''profilo'''',{}\\).get\\(''''nome_arte'''',''''vuoto''''\\)\\); print\\(''''Opere:'''', len\\(d.get\\(''''opere'''',[]\\)\\)\\);print\\(''''Candidature:'''', len\\(d.get\\(''''candidature'''',[]\\)\\)\\);print\\(''''Mostre:'''', len\\(d.get\\(''''cv_artistico'''',{}\\).get\\(''''mostre'''',[]\\)\\)\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''''Profilo:'''', d.get\\(''''profilo'''',{}\\).get\\(''''nome_arte'''',''''vuoto''''\\)\\); print\\(''''Opere:'''', len\\(d.get\\(''''opere'''',[]\\)\\)\\);print\\(''''Candidature:'''', len\\(d.get\\(''''candidature'''',[]\\)\\)\\);print\\(''''Mostre:'''', len\\(d.get\\(''''cv_artistico'''',{}\\).get\\(''''mostre'''',[]\\)\\)\\)\")",
+      "Bash(for commit:*)",
+      "Bash(do echo:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(/dev/null done:*)"
     ]
   },
   "hooks": {
