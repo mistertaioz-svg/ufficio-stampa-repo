@@ -513,14 +513,25 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
             elif action == "update":
                 logs.append(_handle_update(db, section, data))
             elif action == "remove":
-                logs.append(_handle_remove(db, section, data))
+                # Non eseguire mai una rimozione automaticamente:
+                # metti in coda e chiedi conferma all'utente.
+                _pending_removes.append({"section": section, "data": data})
+                item_label = (
+                    data.get("titolo") or data.get("nome") or
+                    data.get("campo") or str(data)[:60]
+                )
+                logs.append(
+                    f"⚠️ Richiesta eliminazione — '{item_label}' da '{section}'.\n"
+                    f"Rispondi *Sì, elimina* per confermare oppure *No* per annullare."
+                )
             else:
                 logs.append(f"⚠️ Azione sconosciuta: {action}")
         except Exception as e:
             logger.exception("Errore applicando aggiornamento DB")
             logs.append(f"⚠️ Errore: {e}")
 
-    if logs:
+    # Salva solo se ci sono state modifiche effettive (no remove, quelli sono in pending)
+    if any(log.startswith("✅") for log in logs):
         save_database(db)
 
     return logs
