@@ -817,6 +817,9 @@ def main() -> None:
     # Messaggi di testo
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
+    # PDF
+    app.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
+
     # Avvia in polling
     logger.info("Bot in ascolto...")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
