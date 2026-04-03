@@ -991,8 +991,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def send_long_message(update: Update, text: str) -> None:
-    """Telegram ha un limite di 4096 caratteri per messaggio."""
+    """
+    Invia la risposta su Telegram.
+    - Se contiene una tabella markdown, invia anche un file HTML stilizzato.
+    - Spezza i messaggi oltre 4000 caratteri.
+    """
     MAX_LEN = 4000
+
+    # Se c'è una tabella, genera e invia il file HTML
+    if _has_table(text):
+        try:
+            html_buf = markdown_to_html_file(text)
+            await update.message.reply_document(
+                document=html_buf,
+                filename=html_buf.name,
+                caption="📊 Apri il file per vedere la tabella formattata.",
+            )
+        except Exception as e:
+            logger.warning("Errore generazione HTML: %s", e)
+
+    # Invia comunque il testo in chat (senza le pipe della tabella se è troppo lungo)
     if len(text) <= MAX_LEN:
         await update.message.reply_text(text)
         return
