@@ -55,7 +55,7 @@ GITHUB_REPO = os.environ.get("GITHUB_REPO", "")   # formato: "username/repo"
 GITHUB_DB_PATH = os.environ.get("GITHUB_DB_PATH", "database.json")  # percorso nel repo
 
 # Ore di inattività prima di fare il backup automatico (default 2h)
-BACKUP_INACTIVITY_HOURS = float(os.environ.get("BACKUP_INACTIVITY_HOURS", "2"))
+BACKUP_INACTIVITY_HOURS = float(os.environ.get("BACKUP_INACTIVITY_HOURS", "6"))
 
 # ── Client Anthropic ─────────────────────────────────────────────────────────
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
