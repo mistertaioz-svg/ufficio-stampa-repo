@@ -74,6 +74,11 @@ _pending_backup_job = None
 # Ogni elemento: {"section": str, "data": dict, "description": str}
 _pending_removes: list[dict] = []
 
+# ── Analisi Instagram in attesa di link aggiuntivo ────────────────────────────
+# Quando il bot risponde INFO INSUFFICIENTI, salva il contesto qui.
+# Al prossimo link ricevuto, lo fetcha e completa la valutazione.
+_pending_ig_context: dict | None = None  # {"ig_url", "caption", "image_b64", "image_media_type"}
+
 # ── Helpers database ─────────────────────────────────────────────────────────
 
 def _empty_database() -> dict:
