@@ -238,8 +238,11 @@ def save_database(data: dict) -> None:
     """
     Salva il database JSON sul volume persistente.
     Prima crea un backup del file precedente per sicurezza.
-    Se GITHUB_TOKEN e GITHUB_REPO sono configurati, fa il push su GitHub.
+    Schedula un backup automatico dopo BACKUP_INACTIVITY_HOURS ore di inattività:
+    ogni salvataggio azzera il timer, così il backup parte solo quando smetti di usare il bot.
     """
+    global _pending_backup_job
+
     VOLUME_DIR.mkdir(parents=True, exist_ok=True)
 
     # Backup automatico prima di sovrascrivere
@@ -257,11 +260,21 @@ def save_database(data: dict) -> None:
 
     logger.info("Database salvato su volume: %s", DATABASE_PATH)
 
-    # Sync su GitHub in background (non blocca, non crasha se fallisce)
-    try:
-        _push_to_github(data)
-    except Exception as e:
-        logger.warning("Sync GitHub non riuscito: %s", e)
+    # Debounce backup: azzera il timer ad ogni salvataggio
+    if _job_queue is not None:
+        if _pending_backup_job is not None:
+            try:
+                _pending_backup_job.schedule_removal()
+            except Exception:
+                pass
+        delay_seconds = BACKUP_INACTIVITY_HOURS * 3600
+        _pending_backup_job = _job_queue.run_once(
+            _inactivity_backup_job,
+            when=delay_seconds,
+        )
+        logger.info(
+            "Backup schedulato tra %.0f ore di inattività.", BACKUP_INACTIVITY_HOURS
+        )
 
 
 def database_summary(db: dict) -> str:
