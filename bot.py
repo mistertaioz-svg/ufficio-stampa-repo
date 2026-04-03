@@ -392,7 +392,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/help — Questa guida\n"
         "/db — Mostra un riepilogo del database\n"
         "/export — Scarica il database come file JSON\n"
-        "/reset — Cancella la cronologia della conversazione\n\n"
+        "/reset — Cancella la cronologia della conversazione\n"
+        "/reload — Ricarica il database dal template della repo\n\n"
         "*Come usarmi:*\n"
         "Scrivimi in linguaggio naturale. Esempi:\n"
         "• _\"Scrivi una bio di 100 parole per un catalogo\"_\n"
@@ -458,6 +459,24 @@ async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     conversation_history.clear()
     await update.message.reply_text("🔄 Cronologia conversazione cancellata.")
+
+
+async def reload_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Forza la ricopia del database template dalla repo al volume."""
+    if not is_authorized(update):
+        return
+    if TEMPLATE_PATH.exists():
+        # Backup del database attuale prima di sovrascrivere
+        if DATABASE_PATH.exists():
+            shutil.copy2(DATABASE_PATH, BACKUP_PATH)
+        shutil.copy2(TEMPLATE_PATH, DATABASE_PATH)
+        conversation_history.clear()
+        await update.message.reply_text(
+            "🔄 Database ricaricato dal template della repo.\n"
+            "Il database precedente è stato salvato come backup."
+        )
+    else:
+        await update.message.reply_text("⚠️ Template non trovato nella repo.")
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -552,6 +571,7 @@ def main() -> None:
     app.add_handler(CommandHandler("db", db_command))
     app.add_handler(CommandHandler("export", export_command))
     app.add_handler(CommandHandler("reset", reset_command))
+    app.add_handler(CommandHandler("reload", reload_command))
 
     # Messaggi di testo
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
