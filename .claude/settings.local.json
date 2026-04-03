@@ -14,7 +14,8 @@
       "Skill(update-config:*)",
       "Bash(jq -e '.hooks.PostToolUse[] | select\\(.matcher == \"\"Edit|Write\"\"\\) | .hooks[] | select\\(.type == \"\"command\"\"\\) | .command' /Users/mirqotio_air/Documents/Personale/ArtAgent/telegram-art-bot/.claude/settings.local.json)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git commit:*)"
     ]
   },
   "hooks": {
