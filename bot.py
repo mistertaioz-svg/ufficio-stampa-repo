@@ -625,6 +625,51 @@ async def export_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("⚠️ Database non trovato.")
 
 
+async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Forza un backup completo: GitHub + file JSON su Telegram."""
+    if not is_authorized(update):
+        return
+    await update.message.reply_text("🔄 Backup in corso…")
+    db = load_database()
+
+    # 1. Push su GitHub
+    github_ok = _push_to_github(db)
+    github_status = "✅ GitHub" if github_ok else "⚠️ GitHub non raggiunto (dati al sicuro sul Volume)"
+
+    # 2. Invia il file JSON su Telegram
+    if DATABASE_PATH.exists():
+        await update.message.reply_document(
+            document=open(DATABASE_PATH, "rb"),
+            filename=f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+            caption=f"💾 Backup completato.\n{github_status}",
+        )
+    else:
+        await update.message.reply_text(f"💾 {github_status}\n⚠️ File locale non trovato.")
+
+
+async def daily_backup_job(context: CallbackContext) -> None:
+    """Job giornaliero: invia il database su Telegram e fa push su GitHub."""
+    db = load_database()
+
+    # Push GitHub
+    _push_to_github(db)
+
+    # Invia file su Telegram
+    if DATABASE_PATH.exists():
+        await context.bot.send_document(
+            chat_id=MY_TELEGRAM_ID,
+            document=open(DATABASE_PATH, "rb"),
+            filename=f"backup_{datetime.now().strftime('%Y%m%d')}.json",
+            caption=f"☀️ Backup giornaliero automatico — {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+        )
+        logger.info("Backup giornaliero inviato.")
+    else:
+        await context.bot.send_message(
+            chat_id=MY_TELEGRAM_ID,
+            text="⚠️ Backup giornaliero: database non trovato sul volume.",
+        )
+
+
 async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
