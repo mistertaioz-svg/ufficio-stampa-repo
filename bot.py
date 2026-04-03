@@ -902,38 +902,48 @@ async def handle_extra_url(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     extra_url: str,
+    standalone: bool = False,
 ) -> None:
     """
-    Gestisce un URL inviato come approfondimento dopo INFO INSUFFICIENTI.
-    Fetcha la pagina, combina il testo col contesto IG salvato e rivaluta.
+    Gestisce un URL inviato per analisi di una open call.
+    - standalone=False: approfondimento dopo INFO INSUFFICIENTI (ha contesto IG)
+    - standalone=True:  link diretto senza post Instagram precedente
     """
     global _pending_ig_context
-    ctx = _pending_ig_context
-    _pending_ig_context = None  # reset subito
+    ctx = _pending_ig_context if not standalone else None
+    _pending_ig_context = None
 
-    await update.message.reply_text("🔍 Fetcho la pagina per approfondire…")
+    await update.message.reply_text(
+        "🔍 Fetcho la pagina…" if standalone else "🔍 Fetcho la pagina per approfondire…"
+    )
     await update.message.chat.send_action("typing")
 
-    # Fetch testo dalla pagina aggiuntiva
     try:
         extra_text = _fetch_url_text(extra_url)
     except Exception as e:
-        logger.error("Errore fetch URL aggiuntivo: %s", e)
+        logger.error("Errore fetch URL: %s", e)
         await update.message.reply_text(
             f"❌ Non riesco ad aprire il link ({e}).\n"
             "Puoi incollare direttamente il testo della call?"
         )
         return
 
-    # Ricostruisci il messaggio per Claude con tutto il materiale
-    eval_text = INSTAGRAM_EVAL_PROMPT.format(
-        url=ctx["ig_url"],
-        caption=ctx["caption"] or "(caption non disponibile)",
-    )
-    eval_text += f"\n\nINFORMAZIONI AGGIUNTIVE dalla pagina {extra_url}:\n{extra_text}"
+    # Costruisci il prompt in base al contesto disponibile
+    if standalone:
+        eval_text = INSTAGRAM_EVAL_PROMPT.format(
+            url=extra_url,
+            caption="(nessun post Instagram — valutazione diretta dalla pagina web)",
+        )
+        eval_text += f"\n\nCONTENUTO DELLA PAGINA {extra_url}:\n{extra_text}"
+    else:
+        eval_text = INSTAGRAM_EVAL_PROMPT.format(
+            url=ctx["ig_url"],
+            caption=ctx["caption"] or "(caption non disponibile)",
+        )
+        eval_text += f"\n\nINFORMAZIONI AGGIUNTIVE dalla pagina {extra_url}:\n{extra_text}"
 
     content: list[dict] = []
-    if ctx.get("image_b64"):
+    if ctx and ctx.get("image_b64"):
         content.append({
             "type": "image",
             "source": {
