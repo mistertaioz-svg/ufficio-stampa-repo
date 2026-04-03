@@ -285,5 +285,17 @@
       }
     }
   ],
-  "candidature": []
+  "candidature": [
+    {
+      "titolo": "Electric Theater Festival 2026 - Augmented Futures",
+      "ente": "Electric Theater Festival",
+      "luogo": "Interactive Garden, Panicale (PG), Italia",
+      "scadenza": "30 aprile 2026",
+      "stato": "in preparazione",
+      "tipo": "Call for Interactive Installations & Audiovisual Compositions",
+      "tema": "Augmented Futures - Shaping the city through human interaction",
+      "note": "Festival cerca installazioni interattive site-specific e opere audiovisive a media fisso. Tema: come la tecnologia trasforma la percezione del luogo. Panicale come organismo sensibile che evolve attraverso l'interazione umana. Perfetto per proj_ADAM o sviluppi futuri.",
+      "data_inserimento": "2026-04-03"
+    }
+  ]
 }
