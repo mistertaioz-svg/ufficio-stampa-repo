@@ -9,6 +9,9 @@ import json
 import logging
 import re
 import shutil
+import base64
+import urllib.request
+import urllib.error
 from datetime import datetime
 from pathlib import Path
 
@@ -42,6 +45,11 @@ VOLUME_DIR = Path(os.environ.get("VOLUME_PATH", "/data"))
 DATABASE_PATH = VOLUME_DIR / "database.json"
 BACKUP_PATH = VOLUME_DIR / "database_backup.json"
 TEMPLATE_PATH = Path("database.json")  # template nella repo
+
+# ── GitHub sync (opzionale) ───────────────────────────────────────────────────
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_REPO = os.environ.get("GITHUB_REPO", "")   # formato: "username/repo"
+GITHUB_DB_PATH = os.environ.get("GITHUB_DB_PATH", "database.json")  # percorso nel repo
 
 # ── Client Anthropic ─────────────────────────────────────────────────────────
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -112,10 +120,69 @@ def load_database() -> dict:
         return empty
 
 
+def _push_to_github(data: dict) -> bool:
+    """
+    Fa il push del database.json aggiornato su GitHub via API REST.
+    Richiede GITHUB_TOKEN e GITHUB_REPO nelle variabili d'ambiente.
+    Non blocca se fallisce — logga solo un warning.
+    """
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return False
+
+    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_DB_PATH}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+        "Content-Type": "application/json",
+        "User-Agent": "ArtAgent-Bot",
+    }
+
+    # Recupera lo SHA attuale del file (necessario per gli aggiornamenti)
+    sha = ""
+    try:
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            file_info = json.loads(resp.read())
+            sha = file_info.get("sha", "")
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            logger.warning("GitHub GET fallito (%s): %s", e.code, e.reason)
+            return False
+        # 404 = file non esiste ancora, andrà creato
+    except Exception as e:
+        logger.warning("GitHub GET errore: %s", e)
+        return False
+
+    # Prepara il payload
+    content_b64 = base64.b64encode(
+        json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+    ).decode("utf-8")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    payload = {"message": f"auto-backup database {timestamp}", "content": content_b64}
+    if sha:
+        payload["sha"] = sha
+
+    try:
+        req = urllib.request.Request(
+            api_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="PUT",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            status = resp.status
+            logger.info("Database pushato su GitHub (HTTP %s).", status)
+            return status in (200, 201)
+    except Exception as e:
+        logger.warning("GitHub PUT fallito: %s", e)
+        return False
+
+
 def save_database(data: dict) -> None:
     """
     Salva il database JSON sul volume persistente.
     Prima crea un backup del file precedente per sicurezza.
+    Se GITHUB_TOKEN e GITHUB_REPO sono configurati, fa il push su GitHub.
     """
     VOLUME_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -133,6 +200,12 @@ def save_database(data: dict) -> None:
     tmp_path.replace(DATABASE_PATH)
 
     logger.info("Database salvato su volume: %s", DATABASE_PATH)
+
+    # Sync su GitHub in background (non blocca, non crasha se fallisce)
+    try:
+        _push_to_github(data)
+    except Exception as e:
+        logger.warning("Sync GitHub non riuscito: %s", e)
 
 
 def database_summary(db: dict) -> str:
