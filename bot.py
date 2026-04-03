@@ -125,11 +125,17 @@ def _push_to_github(data: dict) -> bool:
     Fa il push del database.json aggiornato su GitHub via API REST.
     Richiede GITHUB_TOKEN e GITHUB_REPO nelle variabili d'ambiente.
     Non blocca se fallisce — logga solo un warning.
+
+    Il backup viene scritto sul branch 'data' (non 'main') per evitare
+    che Railway triggeri un redeploy ad ogni aggiornamento del database.
     """
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False
 
-    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_DB_PATH}"
+    # Branch dedicato ai backup del database: Railway non lo osserva
+    # e non scatta nessun redeploy.
+    BACKUP_BRANCH = os.environ.get("GITHUB_DATA_BRANCH", "data")
+
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
@@ -137,41 +143,81 @@ def _push_to_github(data: dict) -> bool:
         "User-Agent": "ArtAgent-Bot",
     }
 
-    # Recupera lo SHA attuale del file (necessario per gli aggiornamenti)
+    base = f"https://api.github.com/repos/{GITHUB_REPO}"
+
+    # 1. Assicurati che il branch 'data' esista; se non c'è, crealo da 'main'
+    try:
+        req = urllib.request.Request(
+            f"{base}/git/refs/heads/{BACKUP_BRANCH}", headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=10):
+            pass  # branch già esistente
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            # Recupera lo SHA dell'ultimo commit su main per creare il branch
+            try:
+                req = urllib.request.Request(
+                    f"{base}/git/refs/heads/main", headers=headers
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    main_sha = json.loads(resp.read())["object"]["sha"]
+                payload = {"ref": f"refs/heads/{BACKUP_BRANCH}", "sha": main_sha}
+                req = urllib.request.Request(
+                    f"{base}/git/refs",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers=headers,
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=10):
+                    logger.info("Branch '%s' creato su GitHub.", BACKUP_BRANCH)
+            except Exception as ex:
+                logger.warning("Impossibile creare branch '%s': %s", BACKUP_BRANCH, ex)
+                return False
+        else:
+            logger.warning("GitHub branch check fallito (%s): %s", e.code, e.reason)
+            return False
+    except Exception as e:
+        logger.warning("GitHub branch check errore: %s", e)
+        return False
+
+    # 2. Recupera lo SHA attuale del file sul branch 'data' (necessario per aggiornarlo)
+    api_url = f"{base}/contents/{GITHUB_DB_PATH}?ref={BACKUP_BRANCH}"
     sha = ""
     try:
         req = urllib.request.Request(api_url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
-            file_info = json.loads(resp.read())
-            sha = file_info.get("sha", "")
+            sha = json.loads(resp.read()).get("sha", "")
     except urllib.error.HTTPError as e:
         if e.code != 404:
             logger.warning("GitHub GET fallito (%s): %s", e.code, e.reason)
             return False
-        # 404 = file non esiste ancora, andrà creato
     except Exception as e:
         logger.warning("GitHub GET errore: %s", e)
         return False
 
-    # Prepara il payload
+    # 3. Scrivi il file sul branch 'data'
     content_b64 = base64.b64encode(
         json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
     ).decode("utf-8")
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    payload = {"message": f"auto-backup database {timestamp}", "content": content_b64}
+    payload = {
+        "message": f"auto-backup database {timestamp}",
+        "content": content_b64,
+        "branch": BACKUP_BRANCH,
+    }
     if sha:
         payload["sha"] = sha
 
     try:
         req = urllib.request.Request(
-            api_url,
+            f"{base}/contents/{GITHUB_DB_PATH}",
             data=json.dumps(payload).encode("utf-8"),
             headers=headers,
             method="PUT",
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
             status = resp.status
-            logger.info("Database pushato su GitHub (HTTP %s).", status)
+            logger.info("Database pushato su GitHub branch '%s' (HTTP %s).", BACKUP_BRANCH, status)
             return status in (200, 201)
     except Exception as e:
         logger.warning("GitHub PUT fallito: %s", e)
