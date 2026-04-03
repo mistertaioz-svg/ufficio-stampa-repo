@@ -15,7 +15,8 @@
       "Bash(jq -e '.hooks.PostToolUse[] | select\\(.matcher == \"\"Edit|Write\"\"\\) | .hooks[] | select\\(.type == \"\"command\"\"\\) | .command' /Users/mirqotio_air/Documents/Personale/ArtAgent/telegram-art-bot/.claude/settings.local.json)",
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(''''Profilo:'''', d.get\\(''''profilo'''',{}\\).get\\(''''nome_arte'''',''''vuoto''''\\)\\); print\\(''''Opere:'''', len\\(d.get\\(''''opere'''',[]\\)\\)\\);print\\(''''Candidature:'''', len\\(d.get\\(''''candidature'''',[]\\)\\)\\);print\\(''''Mostre:'''', len\\(d.get\\(''''cv_artistico'''',{}\\).get\\(''''mostre'''',[]\\)\\)\\)\")"
     ]
   },
   "hooks": {

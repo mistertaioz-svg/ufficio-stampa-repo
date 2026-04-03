@@ -25,6 +25,7 @@ from telegram.ext import (
     MessageHandler,
     filters,
     ContextTypes,
+    CallbackContext,
 )
 
 # ── Logging ──────────────────────────────────────────────────────────────────
