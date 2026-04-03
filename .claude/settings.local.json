@@ -20,7 +20,8 @@
       "Bash(for commit:*)",
       "Bash(do echo:*)",
       "Bash(python3 -c \":*)",
-      "Bash(/dev/null done:*)"
+      "Bash(/dev/null done:*)",
+      "Bash(python3:*)"
     ]
   },
   "hooks": {
