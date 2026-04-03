@@ -898,6 +898,82 @@ async def handle_instagram_link(
     await send_long_message(update, clean_text)
 
 
+async def handle_extra_url(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    extra_url: str,
+) -> None:
+    """
+    Gestisce un URL inviato come approfondimento dopo INFO INSUFFICIENTI.
+    Fetcha la pagina, combina il testo col contesto IG salvato e rivaluta.
+    """
+    global _pending_ig_context
+    ctx = _pending_ig_context
+    _pending_ig_context = None  # reset subito
+
+    await update.message.reply_text("🔍 Fetcho la pagina per approfondire…")
+    await update.message.chat.send_action("typing")
+
+    # Fetch testo dalla pagina aggiuntiva
+    try:
+        extra_text = _fetch_url_text(extra_url)
+    except Exception as e:
+        logger.error("Errore fetch URL aggiuntivo: %s", e)
+        await update.message.reply_text(
+            f"❌ Non riesco ad aprire il link ({e}).\n"
+            "Puoi incollare direttamente il testo della call?"
+        )
+        return
+
+    # Ricostruisci il messaggio per Claude con tutto il materiale
+    eval_text = INSTAGRAM_EVAL_PROMPT.format(
+        url=ctx["ig_url"],
+        caption=ctx["caption"] or "(caption non disponibile)",
+    )
+    eval_text += f"\n\nINFORMAZIONI AGGIUNTIVE dalla pagina {extra_url}:\n{extra_text}"
+
+    content: list[dict] = []
+    if ctx.get("image_b64"):
+        content.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": ctx["image_media_type"],
+                "data": ctx["image_b64"],
+            },
+        })
+    content.append({"type": "text", "text": eval_text})
+
+    db = load_database()
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": content}],
+        )
+        assistant_text = response.content[0].text
+    except Exception as e:
+        logger.error("Errore Claude (extra URL eval): %s", e)
+        await update.message.reply_text(f"❌ Errore nella valutazione: {e}")
+        return
+
+    # Se ancora insufficiente, aggiorna il contesto
+    if "INFO INSUFFICIENTI" in assistant_text.upper():
+        _pending_ig_context = ctx  # mantieni per un altro tentativo
+        _pending_ig_context["extra_url"] = extra_url
+
+    update_logs = apply_db_updates(assistant_text, db)
+    clean_text = strip_db_update_tags(assistant_text)
+    if update_logs:
+        clean_text += "\n\n" + "\n".join(update_logs)
+
+    record_assistant(assistant_text)
+    await send_long_message(update, clean_text)
+
+
 # ── Rendering HTML per contenuti ricchi ──────────────────────────────────────
 
 HTML_TEMPLATE = """\
