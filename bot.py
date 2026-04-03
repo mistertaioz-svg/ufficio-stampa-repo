@@ -1335,15 +1335,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await handle_instagram_link(update, context, ig_match.group(0))
         return
 
-    # ── Link aggiuntivo dopo INFO INSUFFICIENTI ───────────────────────────────
-    if _pending_ig_context:
-        url_match = re.search(r"https?://[^\s]+", user_text)
-        if url_match:
+    # ── URL generico → analisi open call (con o senza contesto IG precedente) ──
+    url_match = re.search(r"https?://[^\s]+", user_text)
+    if url_match:
+        if _pending_ig_context:
+            # Secondo step: approfondimento dopo INFO INSUFFICIENTI
             await handle_extra_url(update, context, url_match.group(0))
-            return
         else:
-            # Messaggio di testo normale: annulla il contesto in sospeso
-            _pending_ig_context = None
+            # Link diretto senza contesto IG: valutazione standalone
+            await handle_extra_url(
+                update, context, url_match.group(0),
+                standalone=True,
+            )
+        return
+
+    if _pending_ig_context and not url_match:
+        # Messaggio di testo normale mentre c'era contesto in sospeso: annulla
+        _pending_ig_context = None
 
     await update.message.chat.send_action("typing")
 
