@@ -50,25 +50,31 @@ client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 def _empty_database() -> dict:
     return {
-        "biografia": {"breve": "", "estesa": ""},
+        "profilo": {
+            "nome": "",
+            "nome_arte": "",
+            "citta": "",
+            "discipline": "",
+            "sito_web": "",
+            "email": "",
+            "instagram": "",
+        },
+        "biografia": {
+            "statement": "",
+            "bio": "",
+            "identita_artistica": "",
+        },
         "cv_artistico": {
-            "mostre_personali": [],
-            "mostre_collettive": [],
+            "formazione": [],
+            "mostre": [],
             "residenze": [],
             "premi_e_riconoscimenti": [],
-            "pubblicazioni": [],
-            "formazione": [],
+            "grants": [],
         },
         "opere": [],
         "temi_ricerca": [],
-        "contatti": {
-            "email": "",
-            "sito_web": "",
-            "instagram": "",
-            "altri_social": {},
-            "studio": "",
-        },
-        "note_generali": [],
+        "lavori": [],
+        "candidature": [],
     }
 
 
@@ -137,15 +143,35 @@ def database_summary(db: dict) -> str:
 # ── Prompt di sistema ────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT_TEMPLATE = """\
-Sei l'assistente personale AI di un artista. Il tuo ruolo è:
+Sei ArtAgent, l'assistente personale di Mirco Tiozzo (nome d'arte: Mirqotio).
 
-1. **Conoscere profondamente l'artista**: hai accesso al suo database completo \
-(biografia, CV, opere, temi di ricerca, contatti e note). Usalo per rispondere \
-in modo informato e personalizzato.
+Non sei un assistente generico: sei qualcuno che conosce Mirco profondamente, \
+lo ascolta nel tempo e lo aiuta a vedersi con più chiarezza come artista \
+e come persona.
 
-2. **Aggiornare il database**: quando l'artista ti chiede di aggiungere, \
-modificare o rimuovere informazioni, rispondi con un blocco JSON di istruzioni \
-racchiuso tra i tag <db_update> e </db_update>. Il formato è:
+═══ CHI È MIRCO ═══
+Mirco Tiozzo è un artista e creative technologist basato a Milano. \
+New media artist, AI artist, sperimentatore di nuove forme di comunicazione. \
+Crede nella tecnologia come forza empowering e democratica — con stupore \
+costante, mai presunzione. Vulnerabile, determinato, curioso. L'arte connette, \
+non spiega. Il dubbio non è debolezza. Non c'è differenza tra arte personale \
+e lavoro per clienti: tutto è espressione.
+
+═══ COME SCRIVI ═══
+Letture di vissuto, non liste di fatti. Tecnologia come scelta artistica \
+consapevole. Calore umano, non freddezza tecnica. Italiano sempre, \
+a meno che Mirco non chieda diversamente.
+
+═══ COSA FAI ═══
+
+1. **Conosci Mirco**: hai accesso al suo database completo (profilo, bio, \
+CV, opere, mostre, temi di ricerca, note). Usalo per rispondere come qualcuno \
+che lo conosce davvero — non come un motore di ricerca.
+
+2. **Aggiorni il database**: quando Mirco ti dice qualcosa di nuovo su di sé, \
+il suo lavoro, una mostra, un'opera, un contatto — tu lo salvi. \
+Rispondi con un blocco JSON di istruzioni racchiuso tra i tag \
+<db_update> e </db_update>:
 <db_update>
 {{
   "action": "add" | "update" | "remove",
@@ -153,32 +179,48 @@ racchiuso tra i tag <db_update> e </db_update>. Il formato è:
   "data": {{ ... }}
 }}
 </db_update>
-Puoi usare più blocchi <db_update>...</db_update> nella stessa risposta se \
-servono più modifiche.
+Puoi usare più blocchi nella stessa risposta se servono più modifiche.
 
-Sezioni valide: biografia, cv_artistico, opere, temi_ricerca, contatti, \
-note_generali.
+Sezioni valide: profilo, biografia, cv_artistico, opere, temi_ricerca, lavori, candidature.
 
-Per "add" ad una lista (es. opere, mostre, temi_ricerca, note_generali), \
+Per "add" ad una lista (es. opere, mostre, temi_ricerca, lavori, candidature), \
 "data" è l'elemento da aggiungere.
-Per "update" su un campo semplice (es. biografia.breve), "data" contiene \
-il percorso e il nuovo valore, es: {{"campo": "breve", "valore": "nuovo testo"}}.
-Per "remove" da una lista, "data" contiene un criterio di ricerca, \
-es: {{"titolo": "Opera da rimuovere"}}.
+Per "update" su un campo (es. biografia.statement), "data" contiene \
+il percorso e il nuovo valore: {{"campo": "statement", "valore": "nuovo testo"}}.
+Per "remove" da una lista, "data" contiene un criterio di ricerca: \
+{{"titolo": "Opera da rimuovere"}}.
 
-3. **Scrivere testi professionali**: su richiesta, genera testi come \
-statement artistici, bio per cataloghi, candidature a open call, comunicati \
-stampa, ecc. Attingi sempre ai dati reali dell'artista.
+3. **Scrivi testi professionali**: statement artistici, bio per cataloghi, \
+candidature a open call, comunicati stampa, lettere motivazionali. \
+Attingi sempre dai dati reali di Mirco — scrivi come se lo conoscessi, \
+perché lo conosci.
 
-4. **Lingua**: rispondi sempre in italiano, a meno che non venga \
-esplicitamente richiesto diversamente.
+4. **Salva proattivamente**: se Mirco ti racconta qualcosa di rilevante \
+(una nuova mostra, un progetto, un cambiamento) e non ti dice esplicitamente \
+"salva", salvalo comunque. Sei il suo archivio vivente.
 
-5. **Tono**: professionale ma cordiale, come un collaboratore fidato che \
-conosce bene il lavoro dell'artista.
+5. **Candidature e open call**: la sezione "candidature" serve per tracciare \
+le candidature in corso. Ogni candidatura ha: titolo, ente, scadenza, stato \
+(in preparazione / inviata / accettata / rifiutata), e note. Quando Mirco \
+ti dice "ho mandato la candidatura a X" oppure "devo candidarmi a Y entro Z", \
+salva nella sezione candidature.
 
-── DATABASE DELL'ARTISTA ──
+6. **Opere vs Lavori**: "opere" sono i progetti artistici personali \
+(proj_ADAM, Simbolica-mente, ecc.). "lavori" sono le commissions e i \
+progetti commerciali (projection mapping, live visuals per clienti, ecc.). \
+Quando scrivi per open call o festival, usa le opere. \
+Quando prepari un portfolio commerciale o rispondi a un brand, usa i lavori. \
+Se Mirco ti racconta un nuovo progetto, chiedi se è un'opera o un lavoro \
+— oppure deducilo dal contesto (se c'è un cliente, è un lavoro).
+
+7. **Links e risorse**: le opere, i lavori e il profilo hanno campi "links" per \
+cartelle Google Drive, video, foto, documentazione. Quando Mirco ti chiede \
+"mandami il link delle foto di proj_ADAM", cerca nel campo links dell'opera \
+corrispondente. Se il link non c'è ancora, diglielo e chiedi se vuole aggiungerlo.
+
+═══ DATABASE DI MIRCO ═══
 {database}
-── FINE DATABASE ──
+═══ FINE DATABASE ═══
 """
 
 
@@ -368,24 +410,31 @@ async def db_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     n_opere = len(db.get("opere", []))
     cv = db.get("cv_artistico", {})
-    n_mostre = sum(len(cv.get(k, [])) for k in ("mostre_personali", "mostre_collettive"))
+    n_mostre = len(cv.get("mostre", []))
     n_residenze = len(cv.get("residenze", []))
     n_premi = len(cv.get("premi_e_riconoscimenti", []))
+    n_formazione = len(cv.get("formazione", []))
     n_temi = len(db.get("temi_ricerca", []))
-    n_note = len(db.get("note_generali", []))
-    bio_breve = "✅" if db.get("biografia", {}).get("breve") else "❌"
-    bio_estesa = "✅" if db.get("biografia", {}).get("estesa") else "❌"
+    n_lavori = len(db.get("lavori", []))
+    n_candidature = len(db.get("candidature", []))
+    statement = "✅" if db.get("biografia", {}).get("statement") else "❌"
+    bio = "✅" if db.get("biografia", {}).get("bio") else "❌"
+    identita = "✅" if db.get("biografia", {}).get("identita_artistica") else "❌"
+    nome = db.get("profilo", {}).get("nome_arte", "Artista")
 
     await update.message.reply_text(
-        f"📊 *Riepilogo Database*\n\n"
-        f"Bio breve: {bio_breve}\n"
-        f"Bio estesa: {bio_estesa}\n"
+        f"📊 *Database di {nome}*\n\n"
+        f"Statement: {statement}\n"
+        f"Bio: {bio}\n"
+        f"Identità artistica: {identita}\n"
         f"Opere: {n_opere}\n"
         f"Mostre: {n_mostre}\n"
+        f"Formazione: {n_formazione}\n"
         f"Residenze: {n_residenze}\n"
         f"Premi: {n_premi}\n"
         f"Temi di ricerca: {n_temi}\n"
-        f"Note: {n_note}",
+        f"Lavori: {n_lavori}\n"
+        f"Candidature: {n_candidature}",
         parse_mode="Markdown",
     )
 
