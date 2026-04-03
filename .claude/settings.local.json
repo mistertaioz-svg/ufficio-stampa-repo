@@ -12,7 +12,9 @@
       "Bash(git commit -m \"Merge remote history and resolve conflict in requirements.txt:*)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(jq -e '.hooks.PostToolUse[] | select\\(.matcher == \"\"Edit|Write\"\"\\) | .hooks[] | select\\(.type == \"\"command\"\"\\) | .command' /Users/mirqotio_air/Documents/Personale/ArtAgent/telegram-art-bot/.claude/settings.local.json)"
+      "Bash(jq -e '.hooks.PostToolUse[] | select\\(.matcher == \"\"Edit|Write\"\"\\) | .hooks[] | select\\(.type == \"\"command\"\"\\) | .command' /Users/mirqotio_air/Documents/Personale/ArtAgent/telegram-art-bot/.claude/settings.local.json)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)"
     ]
   },
   "hooks": {
@@ -22,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/mirqotio_air/Documents/Personale/ArtAgent/telegram-art-bot && git add -A && git diff --cached --quiet || (git commit -m \"auto-save $(date +%Y-%m-%d_%H:%M)\" && git push origin main)",
+            "command": "cd /Users/mirqotio_air/Documents/Personale/ArtAgent/telegram-art-bot && git add -A && git diff --cached --quiet || (git commit -m \"auto-save $(date +%Y-%m-%d_%H:%M)\" && git pull --rebase origin main && git push origin main)",
             "timeout": 30,
             "statusMessage": "Pushing to GitHub..."
           }
