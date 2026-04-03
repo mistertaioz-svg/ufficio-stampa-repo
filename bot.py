@@ -4,6 +4,7 @@ Usa Claude (Anthropic) come motore AI e un file JSON persistente come database.
 Il database viene salvato su un Railway Volume per sopravvivere ai redeploy.
 """
 
+import io
 import os
 import json
 import logging
