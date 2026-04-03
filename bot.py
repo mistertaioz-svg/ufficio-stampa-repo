@@ -770,6 +770,35 @@ def _fetch_instagram_data(url: str) -> dict:
     }
 
 
+def _fetch_url_text(url: str, max_chars: int = 8000) -> str:
+    """
+    Fetcha una pagina web generica e ne estrae il testo leggibile,
+    rimuovendo tag HTML, script e stili. Usato come fallback quando
+    il post Instagram ha info insufficienti.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        html = resp.read().decode("utf-8", errors="ignore")
+
+    # Rimuovi script, style, e tag HTML
+    html = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r"<[^>]+>", " ", html)
+    # Decode HTML entities e normalizza spazi
+    import html as html_lib
+    text = html_lib.unescape(html)
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    return text[:max_chars]
+
+
 async def handle_instagram_link(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
