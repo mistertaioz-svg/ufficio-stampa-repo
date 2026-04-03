@@ -970,10 +970,9 @@ async def handle_extra_url(
         await update.message.reply_text(f"❌ Errore nella valutazione: {e}")
         return
 
-    # Se ancora insufficiente, aggiorna il contesto
-    if "INFO INSUFFICIENTI" in assistant_text.upper():
-        _pending_ig_context = ctx  # mantieni per un altro tentativo
-        _pending_ig_context["extra_url"] = extra_url
+    # Se ancora insufficiente, mantieni il contesto per un altro tentativo
+    if "INFO INSUFFICIENTI" in assistant_text.upper() and ctx:
+        _pending_ig_context = ctx
 
     update_logs = apply_db_updates(assistant_text, db)
     clean_text = strip_db_update_tags(assistant_text)
