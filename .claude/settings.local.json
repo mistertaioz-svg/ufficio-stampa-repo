@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/mirqotio_air/**)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(ssh-keygen -t ed25519 -C \"mirqotio_air\" -f ~/.ssh/id_ed25519 -N \"\")",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"Merge remote history and resolve conflict in requirements.txt:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ]
+  }
+}
