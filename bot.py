@@ -563,6 +563,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/help — Questa guida\n"
         "/db — Mostra un riepilogo del database\n"
         "/export — Scarica il database come file JSON\n"
+        "/backup — Backup immediato su GitHub + file JSON\n"
         "/reset — Cancella la cronologia della conversazione\n"
         "/reload — Ricarica il database dal template della repo\n\n"
         "*Come usarmi:*\n"
