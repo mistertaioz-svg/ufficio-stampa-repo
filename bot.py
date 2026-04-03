@@ -874,7 +874,19 @@ async def handle_instagram_link(
         await update.message.reply_text(f"❌ Errore nella valutazione: {e}")
         return
 
-    # 5. Applica eventuali db_update (solo se verdict è ✅)
+    # 5. Se INFO INSUFFICIENTI, salva il contesto per il link di approfondimento
+    global _pending_ig_context
+    if "INFO INSUFFICIENTI" in assistant_text.upper():
+        _pending_ig_context = {
+            "ig_url": url,
+            "caption": caption,
+            "image_b64": image_b64,
+            "image_media_type": image_media_type,
+        }
+    else:
+        _pending_ig_context = None
+
+    # 6. Applica eventuali db_update (solo se verdict è ✅)
     update_logs = apply_db_updates(assistant_text, db)
     clean_text = strip_db_update_tags(assistant_text)
     if update_logs:
