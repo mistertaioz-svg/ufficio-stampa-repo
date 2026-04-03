@@ -668,26 +668,29 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text(f"💾 {github_status}\n⚠️ File locale non trovato.")
 
 
-async def daily_backup_job(context: CallbackContext) -> None:
-    """Job giornaliero: invia il database su Telegram e fa push su GitHub."""
-    db = load_database()
+async def _inactivity_backup_job(context: CallbackContext) -> None:
+    """
+    Eseguito automaticamente dopo BACKUP_INACTIVITY_HOURS ore dall'ultimo salvataggio.
+    Invia il database su Telegram e fa push su GitHub.
+    """
+    global _pending_backup_job
+    _pending_backup_job = None
 
-    # Push GitHub
+    db = load_database()
     _push_to_github(db)
 
-    # Invia file su Telegram
     if DATABASE_PATH.exists():
         await context.bot.send_document(
             chat_id=MY_TELEGRAM_ID,
             document=open(DATABASE_PATH, "rb"),
-            filename=f"backup_{datetime.now().strftime('%Y%m%d')}.json",
-            caption=f"☀️ Backup giornaliero automatico — {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+            filename=f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+            caption=f"💾 Backup automatico — {datetime.now().strftime('%d/%m/%Y %H:%M')}\n(nessuna modifica nelle ultime {BACKUP_INACTIVITY_HOURS:.0f} ore)",
         )
-        logger.info("Backup giornaliero inviato.")
+        logger.info("Backup per inattività inviato.")
     else:
         await context.bot.send_message(
             chat_id=MY_TELEGRAM_ID,
-            text="⚠️ Backup giornaliero: database non trovato sul volume.",
+            text="⚠️ Backup automatico: database non trovato sul volume.",
         )
 
 
