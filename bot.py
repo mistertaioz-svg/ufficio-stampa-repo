@@ -1365,13 +1365,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Messaggio di testo normale mentre c'era contesto in sospeso: annulla
         _pending_ig_context = None
 
-    await update.message.chat.send_action("typing")
-
-    db = load_database()
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
-    messages = build_messages(user_text)
-
     try:
+        await update.message.chat.send_action("typing")
+
+        db = load_database()
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+        messages = build_messages(user_text)
+
         response = client.messages.create(
             model=MODEL,
             max_tokens=4096,
@@ -1396,11 +1396,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except anthropic.APIError as e:
         logger.error("Errore API Anthropic: %s", e)
         await update.message.reply_text(
-            f"❌ Errore nella comunicazione con Claude: {e.message}"
+            f"❌ Errore nella comunicazione con Claude: {str(e)}"
         )
     except Exception as e:
-        logger.exception("Errore inatteso")
-        await update.message.reply_text(f"❌ Errore inatteso: {e}")
+        logger.exception("Errore inatteso in handle_message")
+        await update.message.reply_text(f"❌ Errore inatteso: {str(e)}")
 
 
 async def send_long_message(update: Update, text: str) -> None:
