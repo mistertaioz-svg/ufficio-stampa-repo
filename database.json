@@ -220,6 +220,23 @@
         "video": "",
         "documentazione": ""
       }
+    },
+    {
+      "titolo": "p[ai]n",
+      "anno": 2026,
+      "medium": "",
+      "concept": "",
+      "tech": {},
+      "crediti": {
+        "created_by": "Mirqotio"
+      },
+      "note": "Audio ancora in sviluppo",
+      "links": {
+        "foto": "",
+        "video": "",
+        "documentazione": ""
+      },
+      "data_inserimento": "2026-04-03"
     }
   ],
   "temi_ricerca": [
@@ -349,7 +366,7 @@
       "tema": "RestArt Reality",
       "note": "5 premi da 1000 EUR ciascuno. Formato: video verticale o orizzontale, durata illimitata. Generi accettati: qualsiasi forma di arte digitale (video art, animazione, 3D, AI, glitch, hybrid cinema, techno-culture, etc.). Submission tramite piattaforma cifra.com. Richiesto account pubblico completo. Annuncio vincitori: 10 giugno 2026. Lancio call: 10 marzo 2026.",
       "data_inserimento": "2026-04-03",
-      "opera_candidata": "da definire",
+      "opera_candidata": "p[ai]n",
       "contatto": {
         "sito": "cifra.com"
       }
