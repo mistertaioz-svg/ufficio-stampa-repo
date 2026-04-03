@@ -1207,6 +1207,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             # Messaggio normale mentre c'era una rimozione in sospeso: annulla silenziosamente
             _pending_removes.clear()
 
+    # ── Rilevamento link Instagram → analisi open call ────────────────────────
+    ig_match = IG_URL_PATTERN.search(user_text)
+    if ig_match:
+        await handle_instagram_link(update, context, ig_match.group(0))
+        return
+
     await update.message.chat.send_action("typing")
 
     db = load_database()
