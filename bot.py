@@ -659,11 +659,28 @@ MAX_HISTORY = 30
 
 
 def build_messages(user_text: str) -> list[dict]:
-    """Costruisce la lista di messaggi per la chiamata Claude."""
-    conversation_history.append({"role": "user", "content": user_text})
+    """
+    Costruisce la lista di messaggi per la chiamata Claude.
+    Garantisce sempre l'alternanza user/assistant:
+    - Se l'ultimo messaggio è già "user" (la chiamata precedente è fallita prima
+      di registrare la risposta), sostituisce quel messaggio invece di aggiungerne un altro.
+    - Dopo il trimming, elimina eventuali messaggi "assistant" iniziali (la lista
+      deve iniziare sempre con "user").
+    """
+    if conversation_history and conversation_history[-1]["role"] == "user":
+        # Chiamata precedente fallita: rimpiazza il messaggio rimasto orfano
+        conversation_history[-1] = {"role": "user", "content": user_text}
+    else:
+        conversation_history.append({"role": "user", "content": user_text})
+
     if len(conversation_history) > MAX_HISTORY:
         del conversation_history[: len(conversation_history) - MAX_HISTORY]
-    return list(conversation_history)
+
+    # Assicura che la lista parta sempre da un messaggio "user"
+    msgs = list(conversation_history)
+    while msgs and msgs[0]["role"] != "user":
+        msgs.pop(0)
+    return msgs
 
 
 def record_assistant(text: str) -> None:
