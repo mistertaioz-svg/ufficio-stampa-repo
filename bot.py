@@ -17,6 +17,7 @@ from datetime import datetime
 from pathlib import Path
 
 import anthropic
+from pypdf import PdfReader
 from telegram import Update
 from telegram.ext import (
     Application,
