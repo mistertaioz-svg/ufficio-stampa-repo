@@ -260,7 +260,14 @@ def save_database(data: dict) -> None:
 
     logger.info("Database salvato su volume: %s", DATABASE_PATH)
 
-    # Debounce backup: azzera il timer ad ogni salvataggio
+    # Push immediato su GitHub ad ogni salvataggio
+    try:
+        _push_to_github(data)
+    except Exception as e:
+        logger.warning("Sync GitHub non riuscito: %s", e)
+
+    # Debounce per il backup su Telegram: azzera il timer ad ogni salvataggio,
+    # scatta solo dopo BACKUP_INACTIVITY_HOURS ore di inattività
     if _job_queue is not None:
         if _pending_backup_job is not None:
             try:
