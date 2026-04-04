@@ -811,8 +811,13 @@ def _handle_update(db: dict, section: str, data) -> str:
         target[campo] = valore
         return f"✅ Aggiornato '{section}.{campo}'."
     elif isinstance(target, dict):
-        target.update(data)
-        return f"✅ Aggiornato '{section}'."
+        # Filtra le chiavi meta che Claude potrebbe passare per errore
+        _META_KEYS = {"match", "updates", "action", "section", "sottosezione", "campo", "valore", "value"}
+        safe = {k: v for k, v in data.items() if k not in _META_KEYS}
+        if safe:
+            target.update(safe)
+            return f"✅ Aggiornato '{section}'."
+        return f"⚠️ Nessun campo valido per aggiornare '{section}'."
     elif isinstance(target, list):
         # Aggiorna un elemento in una lista trovandolo per "match" e applicando "updates"
         match_criteria = data.get("match", {})
