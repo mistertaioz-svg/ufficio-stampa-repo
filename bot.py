@@ -997,13 +997,47 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not user_text:
         return
 
-    await update.message.chat.send_action("typing")
+    # ── Gestione conferma rimozioni in sospeso ────────────────────────────────
+    if _pending_removes:
+        answer = user_text.strip().lower()
+        confirmed = answer in ("sì", "si", "yes", "sì, elimina", "si, elimina",
+                               "confermo", "ok elimina", "elimina")
+        denied = answer in ("no", "annulla", "no, annulla", "non eliminare")
 
-    db = load_database()
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
-    messages = build_messages(user_text)
+        if confirmed:
+            db = load_database()
+            removed_labels = []
+            for op in _pending_removes:
+                _handle_remove(db, op["section"], op["data"])
+                label = (
+                    op["data"].get("titolo") or op["data"].get("nome") or
+                    op["data"].get("campo") or str(op["data"])[:40]
+                )
+                removed_labels.append(f"'{label}' da '{op['section']}'")
+            save_database(db)
+            _pending_removes.clear()
+            await update.message.reply_text(
+                "🗑️ Eliminato: " + ", ".join(removed_labels)
+            )
+            return
 
+        elif denied:
+            _pending_removes.clear()
+            await update.message.reply_text("✅ Eliminazione annullata. Non ho toccato nulla.")
+            return
+
+        else:
+            # Messaggio normale: annulla silenziosamente la rimozione in sospeso
+            _pending_removes.clear()
+
+    # ── Messaggio normale → Claude ────────────────────────────────────────────
     try:
+        await update.message.chat.send_action("typing")
+
+        db = load_database()
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+        messages = build_messages(user_text)
+
         response = client.messages.create(
             model=MODEL,
             max_tokens=4096,
@@ -1028,11 +1062,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except anthropic.APIError as e:
         logger.error("Errore API Anthropic: %s", e)
         await update.message.reply_text(
-            f"❌ Errore nella comunicazione con Claude: {e.message}"
+            f"❌ Errore nella comunicazione con Claude: {str(e)}"
         )
     except Exception as e:
-        logger.exception("Errore inatteso")
-        await update.message.reply_text(f"❌ Errore inatteso: {e}")
+        logger.exception("Errore inatteso in handle_message")
+        await update.message.reply_text(f"❌ Errore inatteso: {str(e)}")
 
 
 async def send_long_message(update: Update, text: str) -> None:
