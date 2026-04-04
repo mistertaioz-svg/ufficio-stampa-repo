@@ -1187,6 +1187,64 @@ async def _inactivity_backup_job(context: CallbackContext) -> None:
         )
 
 
+async def _daily_notifications_job(context: CallbackContext) -> None:
+    """
+    Job giornaliero (ore NOTIFICATION_HOUR): invia notifiche per le scadenze
+    che cadono esattamente a NOTIFICATION_THRESHOLDS giorni da oggi.
+    """
+    db = load_database()
+    today = date.today()
+    all_alerts = _get_deadline_alerts(db, today)
+
+    # Filtra solo gli alert nei threshold configurati
+    to_notify = [a for a in all_alerts if a["giorni_mancanti"] in NOTIFICATION_THRESHOLDS]
+    if not to_notify:
+        return
+
+    lines = ["🔔 *Scadenze imminenti — promemoria automatico*\n"]
+    for alert in to_notify:
+        lines.append(_format_alert(alert, verbose=True))
+
+    await context.bot.send_message(
+        chat_id=MY_TELEGRAM_ID,
+        text="\n\n".join(lines),
+        parse_mode="Markdown",
+    )
+    logger.info("Notifiche scadenze inviate: %d alert.", len(to_notify))
+
+
+async def notifiche_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Mostra tutte le scadenze rilevanti nei prossimi 30 giorni (+ eventuali scadute)."""
+    if not is_authorized(update):
+        return
+
+    db = load_database()
+    today = date.today()
+    all_alerts = _get_deadline_alerts(db, today)
+
+    # Mostra: scadute da meno di 7 giorni + prossimi 30 giorni
+    relevant = [a for a in all_alerts if -7 <= a["giorni_mancanti"] <= 30]
+
+    if not relevant:
+        await update.message.reply_text(
+            "✅ Nessuna scadenza nelle prossime 4 settimane."
+        )
+        return
+
+    lines = [f"📅 *Scadenze (prossimi 30 giorni)*\n"]
+    for alert in relevant:
+        lines.append(_format_alert(alert, verbose=True))
+
+    lines.append(
+        f"\n_Notifiche automatiche attive: {', '.join(str(d) + ' giorni prima' for d in NOTIFICATION_THRESHOLDS)}_"
+    )
+
+    await update.message.reply_text(
+        "\n\n".join(lines),
+        parse_mode="Markdown",
+    )
+
+
 async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
