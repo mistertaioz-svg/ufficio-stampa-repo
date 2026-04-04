@@ -1634,6 +1634,9 @@ def main() -> None:
     # PDF
     app.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
 
+    # Foto (risposta informativa — il bot non elabora immagini)
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+
     # Job giornaliero per le notifiche di scadenza
     from datetime import time as dtime
     app.job_queue.run_daily(
