@@ -1173,11 +1173,12 @@ async def export_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not is_authorized(update):
         return
     if DATABASE_PATH.exists():
-        await update.message.reply_document(
-            document=open(DATABASE_PATH, "rb"),
-            filename=f"database_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-            caption="📦 Ecco il tuo database artistico aggiornato.",
-        )
+        with open(DATABASE_PATH, "rb") as f:
+            await update.message.reply_document(
+                document=f,
+                filename=f"database_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                caption="📦 Ecco il tuo database artistico aggiornato.",
+            )
     else:
         await update.message.reply_text("⚠️ Database non trovato.")
 
