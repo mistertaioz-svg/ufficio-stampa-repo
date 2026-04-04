@@ -928,6 +928,14 @@ def _merge_into(existing: dict, new_data: dict) -> None:
             existing[k] = v
 
 
+def _item_label(data: dict) -> str:
+    """Restituisce un'etichetta leggibile per un elemento del database."""
+    return (
+        data.get("titolo") or data.get("nome") or
+        data.get("campo") or data.get("istituzione") or str(data)[:40]
+    )
+
+
 def strip_db_update_tags(text: str) -> str:
     """Rimuove i blocchi <db_update>...</db_update> dal testo mostrato all'utente."""
     return re.sub(r"<db_update>.*?</db_update>", "", text, flags=re.DOTALL).strip()
