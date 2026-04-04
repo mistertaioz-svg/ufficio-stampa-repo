@@ -363,7 +363,7 @@ def _push_to_github(data: dict) -> bool:
     # 1. Assicurati che il branch 'data' esista; se non c'è, crealo da 'main'
     try:
         req = urllib.request.Request(
-            f"{base}/git/refs/heads/{BACKUP_BRANCH}", headers=headers
+            f"{base}/git/refs/heads/{GITHUB_DATA_BRANCH}", headers=headers
         )
         with urllib.request.urlopen(req, timeout=10):
             pass  # branch già esistente
@@ -376,7 +376,7 @@ def _push_to_github(data: dict) -> bool:
                 )
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     main_sha = json.loads(resp.read())["object"]["sha"]
-                payload = {"ref": f"refs/heads/{BACKUP_BRANCH}", "sha": main_sha}
+                payload = {"ref": f"refs/heads/{GITHUB_DATA_BRANCH}", "sha": main_sha}
                 req = urllib.request.Request(
                     f"{base}/git/refs",
                     data=json.dumps(payload).encode("utf-8"),
@@ -384,9 +384,9 @@ def _push_to_github(data: dict) -> bool:
                     method="POST",
                 )
                 with urllib.request.urlopen(req, timeout=10):
-                    logger.info("Branch '%s' creato su GitHub.", BACKUP_BRANCH)
+                    logger.info("Branch '%s' creato su GitHub.", GITHUB_DATA_BRANCH)
             except Exception as ex:
-                logger.warning("Impossibile creare branch '%s': %s", BACKUP_BRANCH, ex)
+                logger.warning("Impossibile creare branch '%s': %s", GITHUB_DATA_BRANCH, ex)
                 return False
         else:
             logger.warning("GitHub branch check fallito (%s): %s", e.code, e.reason)
@@ -396,7 +396,7 @@ def _push_to_github(data: dict) -> bool:
         return False
 
     # 2. Recupera lo SHA attuale del file sul branch 'data' (necessario per aggiornarlo)
-    api_url = f"{base}/contents/{GITHUB_DB_PATH}?ref={BACKUP_BRANCH}"
+    api_url = f"{base}/contents/{GITHUB_DB_PATH}?ref={GITHUB_DATA_BRANCH}"
     sha = ""
     try:
         req = urllib.request.Request(api_url, headers=headers)
