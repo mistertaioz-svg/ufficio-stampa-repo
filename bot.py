@@ -1001,6 +1001,64 @@ async def reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text("🔄 Cronologia conversazione cancellata.")
 
 
+async def dedup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Rimuove i duplicati dal database e salva."""
+    if not is_authorized(update):
+        return
+
+    db = load_database()
+    report = []
+
+    # Sezioni che sono liste dirette
+    list_sections = ["opere", "temi_ricerca", "lavori", "candidature"]
+    for section in list_sections:
+        items = db.get(section, [])
+        seen: list[dict] = []
+        removed = 0
+        for item in items:
+            if not isinstance(item, dict):
+                seen.append(item)
+                continue
+            dup_idx = _find_duplicate(seen, item)
+            if dup_idx is not None:
+                _merge_into(seen[dup_idx], item)
+                removed += 1
+            else:
+                seen.append(item)
+        if removed:
+            db[section] = seen
+            report.append(f"• {section}: rimossi {removed} duplicati")
+
+    # Sottosezioni lista dentro cv_artistico
+    cv = db.get("cv_artistico", {})
+    for sub in ["mostre", "formazione", "residenze", "premi_e_riconoscimenti", "grants"]:
+        items = cv.get(sub, [])
+        seen = []
+        removed = 0
+        for item in items:
+            if not isinstance(item, dict):
+                seen.append(item)
+                continue
+            dup_idx = _find_duplicate(seen, item)
+            if dup_idx is not None:
+                _merge_into(seen[dup_idx], item)
+                removed += 1
+            else:
+                seen.append(item)
+        if removed:
+            cv[sub] = seen
+            report.append(f"• cv_artistico.{sub}: rimossi {removed} duplicati")
+
+    if report:
+        save_database(db)
+        await update.message.reply_text(
+            "🧹 *Deduplicazione completata:*\n\n" + "\n".join(report),
+            parse_mode="Markdown",
+        )
+    else:
+        await update.message.reply_text("✅ Nessun duplicato trovato. Il database è pulito.")
+
+
 async def reload_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Forza la ricopia del database template dalla repo al volume."""
     if not is_authorized(update):
