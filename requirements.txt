@@ -1,4 +1,4 @@
-python-telegram-bot==21.6
+python-telegram-bot[job-queue]==21.6
 anthropic>=0.40.0
 pypdf>=4.0.0
 markdown>=3.5
