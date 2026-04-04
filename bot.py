@@ -1479,11 +1479,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             removed_labels = []
             for op in _pending_removes:
                 _handle_remove(db, op["section"], op["data"])
-                label = (
-                    op["data"].get("titolo") or op["data"].get("nome") or
-                    op["data"].get("campo") or str(op["data"])[:40]
-                )
-                removed_labels.append(f"'{label}' da '{op['section']}'")
+                removed_labels.append(f"'{_item_label(op['data'])}' da '{op['section']}'")
             save_database(db)
             _pending_removes.clear()
             await update.message.reply_text(
