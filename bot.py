@@ -770,9 +770,7 @@ def _handle_add(db: dict, section: str, data) -> str:
             dup_idx = _find_duplicate(target, data)
             if dup_idx is not None:
                 _merge_into(target[dup_idx], data)
-                label = (data.get("titolo") or data.get("nome") or
-                         data.get("istituzione") or str(data)[:40])
-                return f"✅ Aggiornato '{label}' in '{section}' (già esistente, nessun duplicato creato)."
+                return f"✅ Aggiornato '{_item_label(data)}' in '{section}' (già esistente, nessun duplicato creato)."
         target.append(data)
         return f"✅ Aggiunto elemento a '{section}'."
     elif isinstance(target, dict):
@@ -785,9 +783,7 @@ def _handle_add(db: dict, section: str, data) -> str:
             dup_idx = _find_duplicate(target[sub], entry)
             if dup_idx is not None:
                 _merge_into(target[sub][dup_idx], entry)
-                label = (entry.get("titolo") or entry.get("nome") or
-                         entry.get("istituzione") or str(entry)[:40])
-                return f"✅ Aggiornato '{label}' in '{section}.{sub}' (già esistente, nessun duplicato creato)."
+                return f"✅ Aggiornato '{_item_label(entry)}' in '{section}.{sub}' (già esistente, nessun duplicato creato)."
             target[sub].append(entry)
             return f"✅ Aggiunto elemento a '{section}.{sub}'."
         else:
