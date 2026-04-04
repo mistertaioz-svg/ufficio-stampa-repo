@@ -1366,6 +1366,12 @@ async def reload_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             shutil.copy2(DATABASE_PATH, BACKUP_PATH)
         shutil.copy2(TEMPLATE_PATH, DATABASE_PATH)
         conversation_history.clear()
+        # Sincronizza il template su GitHub
+        try:
+            new_db = load_database()
+            _push_to_github(new_db)
+        except Exception as e:
+            logger.warning("Sync GitHub dopo reload fallito: %s", e)
         await update.message.reply_text(
             "🔄 Database ricaricato dal template della repo.\n"
             "Il database precedente è stato salvato come backup."
