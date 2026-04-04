@@ -636,6 +636,65 @@ def _matches(item, criteria: dict) -> bool:
     return False
 
 
+def _normalize_str(s: str) -> str:
+    """Normalizza una stringa per il confronto: minuscolo, senza punteggiatura."""
+    s = s.lower().strip()
+    s = re.sub(r"[^\w\s]", "", s)
+    return re.sub(r"\s+", " ", s).strip()
+
+
+# Campi che identificano univocamente un elemento, per ordine di priorità.
+_IDENTITY_KEYS = ["titolo", "nome", "istituzione", "evento", "premio"]
+
+
+def _find_duplicate(target: list, data: dict) -> int | None:
+    """
+    Cerca in una lista un elemento identico o molto simile a `data`.
+    Confronta i campi identitari (_IDENTITY_KEYS) in modo case-insensitive.
+    Restituisce l'indice del duplicato, o None se non trovato.
+    """
+    if not isinstance(data, dict):
+        return None
+
+    # Trova il campo identitario del nuovo elemento
+    new_key = new_val = None
+    for key in _IDENTITY_KEYS:
+        raw = data.get(key, "")
+        if raw:
+            new_key = key
+            new_val = _normalize_str(str(raw))
+            break
+
+    if new_val is None:
+        return None  # nessun campo identitario: non possiamo rilevare duplicati
+
+    for i, item in enumerate(target):
+        if not isinstance(item, dict):
+            continue
+        item_raw = item.get(new_key, "")
+        if item_raw and _normalize_str(str(item_raw)) == new_val:
+            return i
+
+    return None
+
+
+def _merge_into(existing: dict, new_data: dict) -> None:
+    """
+    Arricchisce `existing` con i campi di `new_data`.
+    Regole:
+    - Campi assenti in `existing` → aggiunti.
+    - Campi presenti e vuoti in `existing` → sovrascritti.
+    - `data_inserimento` → mai sovrascritto (conserva la data originale).
+    - Tutti gli altri campi già presenti → aggiornati con il valore di `new_data`
+      (lascia che Claude aggiorni stato, note, scadenza, ecc.).
+    """
+    for k, v in new_data.items():
+        if k == "data_inserimento":
+            continue  # conserva sempre la data di prima aggiunta
+        if v is not None and v != "":
+            existing[k] = v
+
+
 def strip_db_update_tags(text: str) -> str:
     """Rimuove i blocchi <db_update>...</db_update> dal testo mostrato all'utente."""
     return re.sub(r"<db_update>.*?</db_update>", "", text, flags=re.DOTALL).strip()
