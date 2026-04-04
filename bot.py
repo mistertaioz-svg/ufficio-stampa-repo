@@ -1117,38 +1117,56 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def send_long_message(update: Update, text: str) -> None:
     """
     Invia la risposta su Telegram.
-    - Se contiene una tabella markdown, invia anche un file HTML stilizzato.
-    - Spezza i messaggi oltre 4000 caratteri.
+    - Se contiene una tabella markdown: invia un file HTML stilizzato e,
+      in chat, solo il testo fuori dalla tabella (intro + note), senza ripetere
+      le righe | ... |.
+    - Se non contiene tabelle: invia il testo direttamente, spezzato se > 4000 caratteri.
     """
     MAX_LEN = 4000
 
-    # Se c'è una tabella, genera e invia il file HTML
     if _has_table(text):
+        # 1. Invia il file HTML con la tabella completa
+        html_sent = False
         try:
             html_buf = markdown_to_html_file(text)
             await update.message.reply_document(
                 document=html_buf,
                 filename=html_buf.name,
-                caption="📊 Apri il file per vedere la tabella formattata.",
+                caption="📊 Apri il file per la tabella formattata.",
             )
+            html_sent = True
         except Exception as e:
             logger.warning("Errore generazione HTML: %s", e)
 
-    # Invia comunque il testo in chat (senza le pipe della tabella se è troppo lungo)
-    if len(text) <= MAX_LEN:
+        # 2. In chat manda solo il testo fuori dalla tabella (se c'è qualcosa)
+        if html_sent:
+            surrounding = _strip_tables(text)
+            if surrounding:
+                await _send_text_chunks(update, surrounding, MAX_LEN)
+        else:
+            # HTML fallito: manda tutto il testo come fallback
+            await _send_text_chunks(update, text, MAX_LEN)
+        return
+
+    await _send_text_chunks(update, text, MAX_LEN)
+
+
+async def _send_text_chunks(update: Update, text: str, max_len: int) -> None:
+    """Invia un testo spezzandolo in chunk se supera max_len."""
+    if len(text) <= max_len:
         await update.message.reply_text(text)
         return
 
     parts = []
     while text:
-        if len(text) <= MAX_LEN:
+        if len(text) <= max_len:
             parts.append(text)
             break
-        cut = text.rfind("\n", 0, MAX_LEN)
+        cut = text.rfind("\n", 0, max_len)
         if cut == -1:
-            cut = text.rfind(". ", 0, MAX_LEN)
+            cut = text.rfind(". ", 0, max_len)
         if cut == -1:
-            cut = MAX_LEN
+            cut = max_len
         parts.append(text[: cut + 1])
         text = text[cut + 1 :]
 
