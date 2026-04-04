@@ -351,10 +351,6 @@ def _push_to_github(data: dict) -> bool:
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False
 
-    # Branch dedicato ai backup del database: Railway non lo osserva
-    # e non scatta nessun redeploy.
-    BACKUP_BRANCH = os.environ.get("GITHUB_DATA_BRANCH", "data")
-
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
