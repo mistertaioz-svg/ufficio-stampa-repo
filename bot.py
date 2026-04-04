@@ -664,10 +664,11 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
     applica le modifiche al database e restituisce un log delle operazioni.
     """
     pattern = re.compile(r"<db_update>\s*(\{.*?\})\s*</db_update>", re.DOTALL)
-    matches = pattern.findall(response_text)
+    raw_matches = pattern.findall(response_text)
     logs: list[str] = []
+    touched_candidature: list[dict] = []  # elementi candidature effettivamente modificati
 
-    for raw in matches:
+    for raw in raw_matches:
         try:
             instruction = json.loads(raw)
         except json.JSONDecodeError:
@@ -681,19 +682,34 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
 
         try:
             if action == "add":
-                logs.append(_handle_add(db, section, data))
+                result = _handle_add(db, section, data)
+                logs.append(result)
+                # Traccia la candidatura aggiunta/aggiornata per i controlli obbligatori
+                if section == "candidature" and result.startswith("✅") and isinstance(data, dict):
+                    cands = db.get("candidature", [])
+                    dup_idx = _find_duplicate(cands, data)
+                    item = cands[dup_idx] if dup_idx is not None else (cands[-1] if cands else None)
+                    if item:
+                        touched_candidature.append(item)
+
             elif action == "update":
-                logs.append(_handle_update(db, section, data))
+                result = _handle_update(db, section, data)
+                logs.append(result)
+                # Traccia le candidature aggiornate
+                if section == "candidature" and result.startswith("✅") and isinstance(data, dict):
+                    match_criteria = data.get("match", {})
+                    if match_criteria:
+                        for item in db.get("candidature", []):
+                            if isinstance(item, dict) and _matches(item, match_criteria):
+                                touched_candidature.append(item)
+
             elif action == "remove":
                 # Non eseguire mai una rimozione automaticamente:
                 # metti in coda e chiedi conferma all'utente.
                 _pending_removes.append({"section": section, "data": data})
-                item_label = (
-                    data.get("titolo") or data.get("nome") or
-                    data.get("campo") or str(data)[:40]
-                )
+                label = _item_label(data) if isinstance(data, dict) else str(data)[:40]
                 logs.append(
-                    f"⚠️ Richiesta eliminazione — '{item_label}' da '{section}'.\n"
+                    f"⚠️ Richiesta eliminazione — '{label}' da '{section}'.\n"
                     "Rispondi *Sì, elimina* per confermare oppure *No* per annullare."
                 )
             else:
@@ -705,52 +721,42 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
     # Salva solo se ci sono state modifiche reali (non solo richieste di conferma)
     if any(log.startswith("✅") for log in logs):
         save_database(db)
-        # Controllo campi obbligatori per le candidature appena salvate
-        logs.extend(_check_candidatura_fields(logs, db))
+        # Controllo campi obbligatori per le candidature appena toccate
+        logs.extend(_check_candidatura_fields(touched_candidature))
 
     return logs
 
 
-def _check_candidatura_fields(logs: list[str], db: dict) -> list[str]:
+def _check_candidatura_fields(touched: list[dict]) -> list[str]:
     """
-    Dopo ogni salvataggio che ha toccato 'candidature', controlla se l'ultima
-    candidatura modificata/aggiunta ha i campi obbligatori `link_call` e `contatto`.
+    Per ogni candidatura toccata (aggiunta o aggiornata), controlla se i campi
+    obbligatori `link_call` e `contatto` sono presenti.
     Restituisce avvisi da aggiungere ai log (non blocca il salvataggio).
     """
     warnings = []
-    # Recupera le candidature appena toccate (sezione candidature)
-    if not any("candidature" in log for log in logs):
-        return warnings
+    for item in touched:
+        if not isinstance(item, dict):
+            continue
+        titolo = item.get("titolo") or "candidatura"
+        missing = []
 
-    candidature = db.get("candidature", [])
-    if not candidature:
-        return warnings
+        if not item.get("link_call"):
+            missing.append("il *link della call* (post Instagram o pagina del sito)")
 
-    # Controlla l'ultima candidatura (quella appena aggiunta/aggiornata)
-    last = candidature[-1]
-    if not isinstance(last, dict):
-        return warnings
-
-    titolo = last.get("titolo") or "candidatura"
-    missing = []
-
-    if not last.get("link_call"):
-        missing.append("il *link della call* (post Instagram o pagina del sito)")
-
-    contatto = last.get("contatto")
-    contatto_vuoto = (
-        not contatto or
-        (isinstance(contatto, dict) and not any(contatto.values())) or
-        (isinstance(contatto, str) and not contatto.strip())
-    )
-    if contatto_vuoto:
-        missing.append("il *contatto dell'organizzatore* (email o profilo Instagram)")
-
-    if missing:
-        warnings.append(
-            f"⚠️ Per *{titolo}* mancano informazioni importanti:\n" +
-            "\n".join(f"  — {m}" for m in missing)
+        contatto = item.get("contatto")
+        contatto_vuoto = (
+            not contatto or
+            (isinstance(contatto, dict) and not any(contatto.values())) or
+            (isinstance(contatto, str) and not contatto.strip())
         )
+        if contatto_vuoto:
+            missing.append("il *contatto dell'organizzatore* (email o profilo Instagram)")
+
+        if missing:
+            warnings.append(
+                f"⚠️ Per *{titolo}* mancano informazioni importanti:\n" +
+                "\n".join(f"  — {m}" for m in missing)
+            )
 
     return warnings
 
