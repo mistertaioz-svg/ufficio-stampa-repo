@@ -61,12 +61,23 @@ BACKUP_INACTIVITY_HOURS = float(os.environ.get("BACKUP_INACTIVITY_HOURS", "6"))
 # ── Client Anthropic ─────────────────────────────────────────────────────────
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
+# ── Pattern URL Instagram ─────────────────────────────────────────────────────
+IG_URL_PATTERN = re.compile(
+    r"https?://(?:www\.)?instagram\.com/(?:p|reel)/([A-Za-z0-9_\-]+)/?"
+)
+
 # ── Job queue globale (inizializzata in main) ─────────────────────────────────
 _job_queue = None
 _pending_backup_job = None
 
 # ── Rimozioni in attesa di conferma ──────────────────────────────────────────
+# Ogni elemento: {"section": str, "data": dict, "description": str}
 _pending_removes: list[dict] = []
+
+# ── Analisi Instagram in attesa di link aggiuntivo ────────────────────────────
+# Quando il bot risponde INFO INSUFFICIENTI, salva il contesto qui.
+# Al prossimo link ricevuto, lo fetcha e completa la valutazione.
+_pending_ig_context: dict | None = None  # {"ig_url", "caption", "image_b64", "image_media_type"}
 
 # ── Helpers database ─────────────────────────────────────────────────────────
 
@@ -441,15 +452,28 @@ perché lo conosci.
 (una nuova mostra, un progetto, un cambiamento) e non ti dice esplicitamente \
 "salva", salvalo comunque. Sei il suo archivio vivente.
 
-5. **Candidature e open call — regola assoluta**: ogni volta che in una \
-conversazione emerge una call, un festival, un premio o una candidatura — \
-anche solo citata, anche solo valutata, anche solo discussa — devi salvarla \
+5. **Candidature e open call — regole assolute**: \
+
+SALVATAGGIO: ogni volta che in una conversazione emerge una call, un festival, \
+un premio o una candidatura — anche solo citata, valutata o discussa — salvala \
 IMMEDIATAMENTE nella sezione candidature con tutti i dettagli disponibili. \
 Non aspettare che Mirco dica "salva". Non chiedere conferma. Salva e basta. \
 Se stai scrivendo il testo per una candidatura, salva la candidatura NELLA STESSA \
-risposta in cui scrivi il testo — non in una risposta successiva. \
-Se hai scritto un testo per una call e non hai incluso un blocco <db_update>, \
-hai sbagliato. Correggiti subito nel messaggio successivo.
+risposta in cui scrivi il testo. Se hai scritto un testo per una call e non hai \
+incluso un blocco <db_update>, hai sbagliato — correggiti nel messaggio successivo. \
+
+STATO: usa "in preparazione", "inviata", "accettata", "rifiutata" oppure \
+"scartata" (quando si decide consciamente di non candidarsi). \
+Anche le call scartate vanno tenute nel database — servono come memoria storica \
+di cosa è stato valutato e perché. \
+
+RIMOZIONE — REGOLA FERREA: non rimuovere MAI una candidatura a meno che Mirco \
+non lo chieda in modo esplicito e diretto ("togli KONTEKST dal database", \
+"cancella questa candidatura"). Frasi come "ha senso", "giusto", "ok lascia \
+perdere", "non fa per me" NON sono istruzioni di cancellazione — \
+sono valutazioni. In questi casi aggiorna lo stato a "scartata" e aggiungi \
+la motivazione nelle note. Non usare mai l'action "remove" sulle candidature \
+senza un'istruzione esplicita.
 
 6. **Opere vs Lavori**: "opere" sono i progetti artistici personali \
 (proj_ADAM, Simbolica-mente, ecc.). "lavori" sono le commissions e i \
@@ -499,14 +523,25 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
             elif action == "update":
                 logs.append(_handle_update(db, section, data))
             elif action == "remove":
-                logs.append(_handle_remove(db, section, data))
+                # Non eseguire mai una rimozione automaticamente:
+                # metti in coda e chiedi conferma all'utente.
+                _pending_removes.append({"section": section, "data": data})
+                item_label = (
+                    data.get("titolo") or data.get("nome") or
+                    data.get("campo") or str(data)[:60]
+                )
+                logs.append(
+                    f"⚠️ Richiesta eliminazione — '{item_label}' da '{section}'.\n"
+                    f"Rispondi *Sì, elimina* per confermare oppure *No* per annullare."
+                )
             else:
                 logs.append(f"⚠️ Azione sconosciuta: {action}")
         except Exception as e:
             logger.exception("Errore applicando aggiornamento DB")
             logs.append(f"⚠️ Errore: {e}")
 
-    if logs:
+    # Salva solo se ci sono state modifiche effettive (no remove, quelli sono in pending)
+    if any(log.startswith("✅") for log in logs):
         save_database(db)
 
     return logs
@@ -624,17 +659,348 @@ MAX_HISTORY = 30
 
 
 def build_messages(user_text: str) -> list[dict]:
-    """Costruisce la lista di messaggi per la chiamata Claude."""
-    conversation_history.append({"role": "user", "content": user_text})
+    """
+    Costruisce la lista di messaggi per la chiamata Claude.
+    Garantisce sempre l'alternanza user/assistant:
+    - Se l'ultimo messaggio è già "user" (la chiamata precedente è fallita prima
+      di registrare la risposta), sostituisce quel messaggio invece di aggiungerne un altro.
+    - Dopo il trimming, elimina eventuali messaggi "assistant" iniziali (la lista
+      deve iniziare sempre con "user").
+    """
+    if conversation_history and conversation_history[-1]["role"] == "user":
+        # Chiamata precedente fallita: rimpiazza il messaggio rimasto orfano
+        conversation_history[-1] = {"role": "user", "content": user_text}
+    else:
+        conversation_history.append({"role": "user", "content": user_text})
+
     if len(conversation_history) > MAX_HISTORY:
         del conversation_history[: len(conversation_history) - MAX_HISTORY]
-    return list(conversation_history)
+
+    # Assicura che la lista parta sempre da un messaggio "user"
+    msgs = list(conversation_history)
+    while msgs and msgs[0]["role"] != "user":
+        msgs.pop(0)
+    return msgs
 
 
 def record_assistant(text: str) -> None:
     conversation_history.append({"role": "assistant", "content": text})
     if len(conversation_history) > MAX_HISTORY:
         del conversation_history[: len(conversation_history) - MAX_HISTORY]
+
+
+# ── Analisi post Instagram ───────────────────────────────────────────────────
+
+INSTAGRAM_EVAL_PROMPT = """\
+Hai ricevuto un post Instagram che potrebbe essere una open call.
+
+URL del post: {url}
+Caption del post:
+{caption}
+
+Analizza attentamente tutto il contenuto visibile (immagine + caption) e rispondi \
+seguendo ESATTAMENTE questo schema:
+
+VERDICT: [✅ FA PER TE / ❌ NON FA PER TE / ⚠️ INFO INSUFFICIENTI]
+
+PERCHÉ: [2-4 righe, scrivi come una persona, non come una macchina. \
+Spiega concretamente perché sì o perché no, facendo riferimento alle opere \
+e ai temi di Mirco che conosci dal database.]
+
+---
+
+Criteri di valutazione:
+- Opere di Mirco: proj_ADAM (installazione interattiva AI), Simbolica-mente, \
+  p[ai]n (videoarte, cortometraggio). Cerca affinità tematiche reali.
+- Temi centrali: IA, new media, tecnologia come scelta artistica, interattività, \
+  post-human, relazione uomo-macchina.
+- Livello: Mirco ha esposizioni internazionali (CURRENTS, RENDR). \
+  Scarta call esplicitamente riservate a "first-time" o "complete beginners".
+- Formati accettati: installazioni interattive, video art, mixed media, \
+  performance, sound art. Scarta call solo per pittura/scultura tradizionale \
+  o fotografia analogica.
+- Contesto: preferire festival/premi con visibilità internazionale o europea. \
+  Evitare contesti troppo accademici-attivisti (tipo antropologia, climate activism puro).
+
+Se l'immagine contiene testo (titolo della call, deadline, ente organizzatore) \
+leggilo e usalo nella valutazione.
+
+Se le informazioni sono insufficienti per valutare (post troppo vago, nessun \
+dettaglio sul tema o sul formato), rispondi ⚠️ INFO INSUFFICIENTI e indica \
+cosa manca.
+
+Se il verdict è ✅ FA PER TE, aggiungi OBBLIGATORIAMENTE alla fine un blocco \
+<db_update> per salvare la call nelle candidature con tutti i dettagli \
+estratti dal post. Usa stato "da valutare" e includi nelle note \
+"Trovata su Instagram — da approfondire" + URL del post.
+"""
+
+
+def _fetch_instagram_data(url: str) -> dict:
+    """
+    Fetcha i dati di un post Instagram pubblico tramite i meta tag og:.
+    Restituisce: caption, image_url, author.
+    Lancia eccezione se il post non è accessibile.
+    """
+    headers = {
+        # User-agent mobile per avere più chance di ottenere i meta tag
+        "User-Agent": (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 "
+            "Mobile/15E148 Safari/604.1"
+        ),
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        html = resp.read().decode("utf-8", errors="ignore")
+
+    og = {}
+    # Cerca meta tag in entrambi gli ordini di attributi
+    for m in re.finditer(
+        r'<meta\s+(?:[^>]*?\s+)?property=["\']og:([^"\']+)["\']'
+        r'(?:[^>]*?\s+)?content=["\']([^"\']*)["\']',
+        html, re.IGNORECASE
+    ):
+        og[m.group(1)] = m.group(2)
+    for m in re.finditer(
+        r'<meta\s+(?:[^>]*?\s+)?content=["\']([^"\']*)["\']'
+        r'(?:[^>]*?\s+)?property=["\']og:([^"\']+)["\']',
+        html, re.IGNORECASE
+    ):
+        og[m.group(2)] = m.group(1)
+
+    # Fallback: cerca la descrizione anche nei meta name="description"
+    if not og.get("description"):
+        m = re.search(
+            r'<meta\s+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
+            html, re.IGNORECASE
+        )
+        if m:
+            og["description"] = m.group(1)
+
+    return {
+        "caption": og.get("description", "").strip(),
+        "image_url": og.get("image", "").strip(),
+        "author": og.get("site_name", "Instagram"),
+    }
+
+
+def _fetch_url_text(url: str, max_chars: int = 8000) -> str:
+    """
+    Fetcha una pagina web generica e ne estrae il testo leggibile,
+    rimuovendo tag HTML, script e stili. Usato come fallback quando
+    il post Instagram ha info insufficienti.
+    """
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "it-IT,it;q=0.9,en-US;q=0.8",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        html = resp.read().decode("utf-8", errors="ignore")
+
+    # Rimuovi script, style, e tag HTML
+    html = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r"<[^>]+>", " ", html)
+    # Decode HTML entities e normalizza spazi
+    import html as html_lib
+    text = html_lib.unescape(html)
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    return text[:max_chars]
+
+
+async def handle_instagram_link(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    url: str,
+) -> None:
+    """Analizza un post Instagram e valuta se la open call fa per Mirco."""
+    await update.message.reply_text("🔍 Analizzo il post Instagram…")
+    await update.message.chat.send_action("typing")
+
+    # 1. Fetch dati del post
+    try:
+        post = _fetch_instagram_data(url)
+    except Exception as e:
+        logger.error("Errore fetch Instagram: %s", e)
+        await update.message.reply_text(
+            "❌ Non riesco ad accedere al post. Assicurati che sia pubblico, "
+            "oppure incollami direttamente il testo della call."
+        )
+        return
+
+    caption = post["caption"]
+    image_url = post["image_url"]
+
+    # 2. Scarica l'immagine per la vision
+    image_b64 = None
+    image_media_type = "image/jpeg"
+    if image_url:
+        try:
+            img_req = urllib.request.Request(
+                image_url,
+                headers={"User-Agent": "Mozilla/5.0"},
+            )
+            with urllib.request.urlopen(img_req, timeout=10) as resp:
+                raw = resp.read()
+                ct = resp.headers.get("Content-Type", "image/jpeg").split(";")[0]
+                image_media_type = ct if ct.startswith("image/") else "image/jpeg"
+                image_b64 = base64.b64encode(raw).decode("utf-8")
+        except Exception as e:
+            logger.warning("Impossibile scaricare immagine IG: %s", e)
+
+    # 3. Costruisci il messaggio per Claude (vision se immagine disponibile)
+    eval_text = INSTAGRAM_EVAL_PROMPT.format(
+        url=url,
+        caption=caption or "(caption non disponibile)",
+    )
+
+    content: list[dict] = []
+    if image_b64:
+        content.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": image_media_type,
+                "data": image_b64,
+            },
+        })
+    content.append({"type": "text", "text": eval_text})
+
+    # 4. Chiedi a Claude la valutazione (con il database come contesto)
+    db = load_database()
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": content}],
+        )
+        assistant_text = response.content[0].text
+    except Exception as e:
+        logger.error("Errore Claude (IG eval): %s", e)
+        await update.message.reply_text(f"❌ Errore nella valutazione: {e}")
+        return
+
+    # 5. Se INFO INSUFFICIENTI, salva il contesto per il link di approfondimento
+    global _pending_ig_context
+    if "INFO INSUFFICIENTI" in assistant_text.upper():
+        _pending_ig_context = {
+            "ig_url": url,
+            "caption": caption,
+            "image_b64": image_b64,
+            "image_media_type": image_media_type,
+        }
+    else:
+        _pending_ig_context = None
+
+    # 6. Applica eventuali db_update (solo se verdict è ✅)
+    update_logs = apply_db_updates(assistant_text, db)
+    clean_text = strip_db_update_tags(assistant_text)
+    if update_logs:
+        clean_text += "\n\n" + "\n".join(update_logs)
+
+    # Registra ENTRAMBI i turni nella cronologia così i follow-up funzionano
+    conversation_history.append({"role": "user", "content": f"[Analisi open call — {url}]"})
+    record_assistant(assistant_text)
+
+    await send_long_message(update, clean_text)
+
+
+async def handle_extra_url(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    extra_url: str,
+    standalone: bool = False,
+) -> None:
+    """
+    Gestisce un URL inviato per analisi di una open call.
+    - standalone=False: approfondimento dopo INFO INSUFFICIENTI (ha contesto IG)
+    - standalone=True:  link diretto senza post Instagram precedente
+    """
+    global _pending_ig_context
+    ctx = _pending_ig_context if not standalone else None
+    _pending_ig_context = None
+
+    await update.message.reply_text(
+        "🔍 Fetcho la pagina…" if standalone else "🔍 Fetcho la pagina per approfondire…"
+    )
+    await update.message.chat.send_action("typing")
+
+    try:
+        extra_text = _fetch_url_text(extra_url)
+    except Exception as e:
+        logger.error("Errore fetch URL: %s", e)
+        await update.message.reply_text(
+            f"❌ Non riesco ad aprire il link ({e}).\n"
+            "Puoi incollare direttamente il testo della call?"
+        )
+        return
+
+    # Costruisci il prompt in base al contesto disponibile
+    if standalone:
+        eval_text = INSTAGRAM_EVAL_PROMPT.format(
+            url=extra_url,
+            caption="(nessun post Instagram — valutazione diretta dalla pagina web)",
+        )
+        eval_text += f"\n\nCONTENUTO DELLA PAGINA {extra_url}:\n{extra_text}"
+    else:
+        eval_text = INSTAGRAM_EVAL_PROMPT.format(
+            url=ctx["ig_url"],
+            caption=ctx["caption"] or "(caption non disponibile)",
+        )
+        eval_text += f"\n\nINFORMAZIONI AGGIUNTIVE dalla pagina {extra_url}:\n{extra_text}"
+
+    content: list[dict] = []
+    if ctx and ctx.get("image_b64"):
+        content.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": ctx["image_media_type"],
+                "data": ctx["image_b64"],
+            },
+        })
+    content.append({"type": "text", "text": eval_text})
+
+    db = load_database()
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+
+    try:
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=[{"role": "user", "content": content}],
+        )
+        assistant_text = response.content[0].text
+    except Exception as e:
+        logger.error("Errore Claude (extra URL eval): %s", e)
+        await update.message.reply_text(f"❌ Errore nella valutazione: {e}")
+        return
+
+    # Se ancora insufficiente, mantieni il contesto per un altro tentativo
+    if "INFO INSUFFICIENTI" in assistant_text.upper() and ctx:
+        _pending_ig_context = ctx
+
+    update_logs = apply_db_updates(assistant_text, db)
+    clean_text = strip_db_update_tags(assistant_text)
+    if update_logs:
+        clean_text += "\n\n" + "\n".join(update_logs)
+
+    # Registra entrambi i turni nella cronologia
+    conversation_history.append({"role": "user", "content": f"[Analisi open call — {extra_url}]"})
+    record_assistant(assistant_text)
+    await send_long_message(update, clean_text)
 
 
 # ── Rendering HTML per contenuti ricchi ──────────────────────────────────────
@@ -959,13 +1325,70 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not user_text:
         return
 
-    await update.message.chat.send_action("typing")
+    # ── Gestione conferma rimozioni in sospeso ────────────────────────────────
+    if _pending_removes:
+        answer = user_text.strip().lower()
+        confirmed = answer in ("sì", "si", "yes", "sì, elimina", "si, elimina",
+                               "confermo", "ok elimina", "elimina")
+        denied = answer in ("no", "annulla", "no, annulla", "non eliminare")
 
-    db = load_database()
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
-    messages = build_messages(user_text)
+        if confirmed:
+            db = load_database()
+            removed_labels = []
+            for op in _pending_removes:
+                _handle_remove(db, op["section"], op["data"])
+                label = (
+                    op["data"].get("titolo") or op["data"].get("nome") or
+                    op["data"].get("campo") or str(op["data"])[:40]
+                )
+                removed_labels.append(f"'{label}' da '{op['section']}'")
+            save_database(db)
+            _pending_removes.clear()
+            await update.message.reply_text(
+                "🗑️ Eliminato: " + ", ".join(removed_labels)
+            )
+            return
+
+        elif denied:
+            _pending_removes.clear()
+            await update.message.reply_text("✅ Eliminazione annullata. Non ho toccato nulla.")
+            return
+
+        else:
+            # Messaggio normale mentre c'era una rimozione in sospeso: annulla silenziosamente
+            _pending_removes.clear()
+
+    # ── Rilevamento link Instagram → analisi open call ────────────────────────
+    ig_match = IG_URL_PATTERN.search(user_text)
+    if ig_match:
+        await handle_instagram_link(update, context, ig_match.group(0))
+        return
+
+    # ── URL generico → analisi open call (con o senza contesto IG precedente) ──
+    url_match = re.search(r"https?://[^\s]+", user_text)
+    if url_match:
+        if _pending_ig_context:
+            # Secondo step: approfondimento dopo INFO INSUFFICIENTI
+            await handle_extra_url(update, context, url_match.group(0))
+        else:
+            # Link diretto senza contesto IG: valutazione standalone
+            await handle_extra_url(
+                update, context, url_match.group(0),
+                standalone=True,
+            )
+        return
+
+    if _pending_ig_context and not url_match:
+        # Messaggio di testo normale mentre c'era contesto in sospeso: annulla
+        _pending_ig_context = None
 
     try:
+        await update.message.chat.send_action("typing")
+
+        db = load_database()
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+        messages = build_messages(user_text)
+
         response = client.messages.create(
             model=MODEL,
             max_tokens=4096,
@@ -990,11 +1413,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except anthropic.APIError as e:
         logger.error("Errore API Anthropic: %s", e)
         await update.message.reply_text(
-            f"❌ Errore nella comunicazione con Claude: {e.message}"
+            f"❌ Errore nella comunicazione con Claude: {str(e)}"
         )
     except Exception as e:
-        logger.exception("Errore inatteso")
-        await update.message.reply_text(f"❌ Errore inatteso: {e}")
+        logger.exception("Errore inatteso in handle_message")
+        await update.message.reply_text(f"❌ Errore inatteso: {str(e)}")
 
 
 async def send_long_message(update: Update, text: str) -> None:
