@@ -1583,12 +1583,25 @@ def main() -> None:
     app.add_handler(CommandHandler("reset", reset_command))
     app.add_handler(CommandHandler("reload", reload_command))
     app.add_handler(CommandHandler("dedup", dedup_command))
+    app.add_handler(CommandHandler("notifiche", notifiche_command))
 
     # Messaggi di testo
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # PDF
     app.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
+
+    # Job giornaliero per le notifiche di scadenza
+    from datetime import time as dtime
+    app.job_queue.run_daily(
+        _daily_notifications_job,
+        time=dtime(hour=NOTIFICATION_HOUR, minute=NOTIFICATION_MINUTE),
+        name="daily_notifications",
+    )
+    logger.info(
+        "Notifiche giornaliere alle %02d:%02d, soglie: %s giorni.",
+        NOTIFICATION_HOUR, NOTIFICATION_MINUTE, NOTIFICATION_THRESHOLDS,
+    )
 
     # Avvia in polling
     logger.info("Bot in ascolto...")
