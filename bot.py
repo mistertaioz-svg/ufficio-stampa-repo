@@ -244,8 +244,7 @@ def _fetch_github_database() -> dict | None:
     """
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return None
-    BACKUP_BRANCH = os.environ.get("GITHUB_DATA_BRANCH", "data")
-    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_DB_PATH}?ref={BACKUP_BRANCH}"
+    api_url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_DB_PATH}?ref={GITHUB_DATA_BRANCH}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
