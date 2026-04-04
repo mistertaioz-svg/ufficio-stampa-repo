@@ -54,6 +54,7 @@ TEMPLATE_PATH = Path("database.json")  # template nella repo
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "")   # formato: "username/repo"
 GITHUB_DB_PATH = os.environ.get("GITHUB_DB_PATH", "database.json")  # percorso nel repo
+GITHUB_DATA_BRANCH = os.environ.get("GITHUB_DATA_BRANCH", "data")   # branch per i backup
 
 # Ore di inattività prima di fare il backup automatico (default 6h)
 BACKUP_INACTIVITY_HOURS = float(os.environ.get("BACKUP_INACTIVITY_HOURS", "6"))
