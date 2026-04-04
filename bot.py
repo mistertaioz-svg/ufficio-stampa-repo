@@ -1218,12 +1218,13 @@ async def _inactivity_backup_job(context: CallbackContext) -> None:
     _push_to_github(db)
 
     if DATABASE_PATH.exists():
-        await context.bot.send_document(
-            chat_id=MY_TELEGRAM_ID,
-            document=open(DATABASE_PATH, "rb"),
-            filename=f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-            caption=f"💾 Backup automatico — {datetime.now().strftime('%d/%m/%Y %H:%M')}\n(nessuna modifica nelle ultime {BACKUP_INACTIVITY_HOURS:.0f} ore)",
-        )
+        with open(DATABASE_PATH, "rb") as f:
+            await context.bot.send_document(
+                chat_id=MY_TELEGRAM_ID,
+                document=f,
+                filename=f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                caption=f"💾 Backup automatico — {datetime.now().strftime('%d/%m/%Y %H:%M')}\n(nessuna modifica nelle ultime {BACKUP_INACTIVITY_HOURS:.0f} ore)",
+            )
         logger.info("Backup per inattività inviato.")
     else:
         await context.bot.send_message(
