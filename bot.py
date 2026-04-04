@@ -418,7 +418,7 @@ def _push_to_github(data: dict) -> bool:
     payload = {
         "message": f"auto-backup database {timestamp}",
         "content": content_b64,
-        "branch": BACKUP_BRANCH,
+        "branch": GITHUB_DATA_BRANCH,
     }
     if sha:
         payload["sha"] = sha
@@ -432,7 +432,7 @@ def _push_to_github(data: dict) -> bool:
         )
         with urllib.request.urlopen(req, timeout=15) as resp:
             status = resp.status
-            logger.info("Database pushato su GitHub branch '%s' (HTTP %s).", BACKUP_BRANCH, status)
+            logger.info("Database pushato su GitHub branch '%s' (HTTP %s).", GITHUB_DATA_BRANCH, status)
             return status in (200, 201)
     except Exception as e:
         logger.warning("GitHub PUT fallito: %s", e)
