@@ -1277,7 +1277,7 @@ async def notifiche_command(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         )
         return
 
-    lines = [f"📅 *Scadenze (prossimi 30 giorni)*\n"]
+    lines = [f"📅 *Scadenze (ultimi 7 giorni + prossimi 30 giorni)*\n"]
     for alert in relevant:
         lines.append(_format_alert(alert, verbose=True))
 
