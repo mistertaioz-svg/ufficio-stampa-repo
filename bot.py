@@ -1331,6 +1331,7 @@ def main() -> None:
     app.add_handler(CommandHandler("backup", backup_command))
     app.add_handler(CommandHandler("reset", reset_command))
     app.add_handler(CommandHandler("reload", reload_command))
+    app.add_handler(CommandHandler("dedup", dedup_command))
 
     # Messaggi di testo
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
