@@ -1380,6 +1380,38 @@ async def reload_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("⚠️ Template non trovato nella repo.")
 
 
+async def _call_claude(update: Update, user_text: str) -> None:
+    """
+    Logica centrale: invia user_text a Claude, applica gli aggiornamenti al database
+    e manda la risposta all'utente.
+    Solleva anthropic.APIError o Exception in caso di errore (gestiti dal chiamante).
+    """
+    db = load_database()
+    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
+    messages = build_messages(user_text)
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=4096,
+        system=system_prompt,
+        messages=messages,
+    )
+
+    # Estrai il testo in modo robusto (gestisce content block non-text)
+    assistant_text = next(
+        (b.text for b in response.content if hasattr(b, "text")), ""
+    )
+
+    update_logs = apply_db_updates(assistant_text, db)
+    clean_text = strip_db_update_tags(assistant_text)
+
+    if update_logs:
+        clean_text += "\n\n" + "\n".join(update_logs)
+
+    record_assistant(assistant_text)
+    await send_long_message(update, clean_text)
+
+
 async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Gestisce i PDF inviati dall'utente.
@@ -1411,11 +1443,7 @@ async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     # Estrai testo con pypdf
     try:
         reader = PdfReader(buf)
-        pages_text = []
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                pages_text.append(text)
+        pages_text = [page.extract_text() for page in reader.pages if page.extract_text()]
         pdf_text = "\n\n".join(pages_text).strip()
     except Exception as e:
         logger.error("Errore estrazione PDF: %s", e)
@@ -1436,30 +1464,12 @@ async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         else f"[CONTENUTO PDF — {doc.file_name}]\n\n{pdf_text}"
     )
 
-    # Passa il testo a Claude esattamente come un messaggio normale
-    db = load_database()
-    system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
-    messages = build_messages(user_text)
-
     try:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            system=system_prompt,
-            messages=messages,
-        )
-        assistant_text = response.content[0].text
-        update_logs = apply_db_updates(assistant_text, db)
-        clean_text = strip_db_update_tags(assistant_text)
-        if update_logs:
-            clean_text += "\n\n" + "\n".join(update_logs)
-        record_assistant(assistant_text)
-        await send_long_message(update, clean_text)
-
+        await _call_claude(update, user_text)
     except anthropic.APIError as e:
         logger.error("Errore API Anthropic (PDF): %s", e)
         await update.message.reply_text(
-            f"❌ Errore nella comunicazione con Claude: {e.message}"
+            f"❌ Errore nella comunicazione con Claude: {str(e)}"
         )
     except Exception as e:
         logger.exception("Errore inatteso (PDF)")
