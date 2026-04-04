@@ -55,8 +55,16 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "")   # formato: "username/repo"
 GITHUB_DB_PATH = os.environ.get("GITHUB_DB_PATH", "database.json")  # percorso nel repo
 
-# Ore di inattività prima di fare il backup automatico (default 2h)
+# Ore di inattività prima di fare il backup automatico (default 6h)
 BACKUP_INACTIVITY_HOURS = float(os.environ.get("BACKUP_INACTIVITY_HOURS", "6"))
+
+# Notifiche: ora del check giornaliero (default 09:00) e soglie in giorni
+NOTIFICATION_HOUR = int(os.environ.get("NOTIFICATION_HOUR", "9"))
+NOTIFICATION_MINUTE = int(os.environ.get("NOTIFICATION_MINUTE", "0"))
+# Giorni prima della scadenza in cui scatta la notifica (es. "7,3,1,0")
+NOTIFICATION_THRESHOLDS = [
+    int(x) for x in os.environ.get("NOTIFICATION_DAYS", "7,3,1,0").split(",")
+]
 
 # ── Client Anthropic ─────────────────────────────────────────────────────────
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
