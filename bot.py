@@ -1196,11 +1196,12 @@ async def backup_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     # 2. Invia il file JSON su Telegram
     if DATABASE_PATH.exists():
-        await update.message.reply_document(
-            document=open(DATABASE_PATH, "rb"),
-            filename=f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
-            caption=f"💾 Backup completato.\n{github_status}",
-        )
+        with open(DATABASE_PATH, "rb") as f:
+            await update.message.reply_document(
+                document=f,
+                filename=f"backup_{datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                caption=f"💾 Backup completato.\n{github_status}",
+            )
     else:
         await update.message.reply_text(f"💾 {github_status}\n⚠️ File locale non trovato.")
 
