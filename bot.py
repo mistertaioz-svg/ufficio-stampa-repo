@@ -464,6 +464,16 @@ sono valutazioni. In questi casi aggiorna lo stato a "scartata" e aggiungi \
 la motivazione nelle note. Non usare mai l'action "remove" sulle candidature \
 senza un'istruzione esplicita.
 
+CAMPI OBBLIGATORI per ogni candidatura — se mancano, chiedili esplicitamente: \
+
+a) `link_call`: il link/post dove è pubblicata la call (post Instagram, pagina del sito, \
+PDF, ecc.). È fondamentale per ritrovare i dettagli in futuro. \
+b) `contatto`: le coordinate dell'organizzatore per mandare la candidatura — \
+almeno uno tra: email, profilo Instagram, sito web. \
+Quando salvi una candidatura e uno di questi campi manca, segnalalo chiaramente \
+a Mirco: "Manca il link della call" o "Manca il contatto dell'organizzatore — \
+hai email o profilo Instagram?" Non bloccare il salvataggio, ma ricordaglielo subito.
+
 6. **Opere vs Lavori**: "opere" sono i progetti artistici personali \
 (proj_ADAM, Simbolica-mente, ecc.). "lavori" sono le commissions e i \
 progetti commerciali (projection mapping, live visuals per clienti, ecc.). \
