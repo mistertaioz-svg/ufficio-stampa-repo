@@ -541,14 +541,28 @@ def _handle_add(db: dict, section: str, data) -> str:
     if isinstance(target, list):
         if isinstance(data, dict):
             data.setdefault("data_inserimento", datetime.now().strftime("%Y-%m-%d"))
+            # ── Deduplicazione ──────────────────────────────────────────────
+            dup_idx = _find_duplicate(target, data)
+            if dup_idx is not None:
+                _merge_into(target[dup_idx], data)
+                label = (data.get("titolo") or data.get("nome") or
+                         data.get("istituzione") or str(data)[:40])
+                return f"✅ Aggiornato '{label}' in '{section}' (già esistente, nessun duplicato creato)."
         target.append(data)
         return f"✅ Aggiunto elemento a '{section}'."
     elif isinstance(target, dict):
-        # Per sottosezioni che sono liste (es. cv_artistico.mostre_personali)
+        # Per sottosezioni che sono liste (es. cv_artistico.mostre)
         sub = data.get("sottosezione") or data.get("campo")
         if sub and sub in target and isinstance(target[sub], list):
             entry = {k: v for k, v in data.items() if k not in ("sottosezione", "campo")}
             entry.setdefault("data_inserimento", datetime.now().strftime("%Y-%m-%d"))
+            # ── Deduplicazione nella sottosezione ───────────────────────────
+            dup_idx = _find_duplicate(target[sub], entry)
+            if dup_idx is not None:
+                _merge_into(target[sub][dup_idx], entry)
+                label = (entry.get("titolo") or entry.get("nome") or
+                         entry.get("istituzione") or str(entry)[:40])
+                return f"✅ Aggiornato '{label}' in '{section}.{sub}' (già esistente, nessun duplicato creato)."
             target[sub].append(entry)
             return f"✅ Aggiunto elemento a '{section}.{sub}'."
         else:
