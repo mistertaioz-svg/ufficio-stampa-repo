@@ -722,6 +722,49 @@ def _has_table(text: str) -> bool:
     return False
 
 
+def _extract_title(text: str) -> str:
+    """
+    Estrae un titolo leggibile dal testo markdown per usarlo come nome file.
+    Cerca il primo heading (#, ##, ###) o, in mancanza, la prima riga non vuota.
+    Normalizza: minuscolo, spazi → underscore, rimuove caratteri speciali.
+    """
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("#"):
+            title = re.sub(r"^#+\s*", "", line)
+        elif line:
+            title = line
+        else:
+            continue
+        # Rimuovi tag markdown, punteggiatura e caratteri non alfanumerici
+        title = re.sub(r"[*_`\[\]()]", "", title)
+        title = re.sub(r"[^\w\s]", "", title)
+        title = re.sub(r"\s+", "_", title.strip()).lower()
+        return title[:40] if title else "tabella"
+    return "tabella"
+
+
+def _strip_tables(text: str) -> str:
+    """
+    Rimuove le righe di tabella markdown dal testo (righe con | o separatori ---).
+    Lascia il testo introduttivo e le note dopo la tabella.
+    """
+    lines = text.splitlines()
+    result = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Riga separatrice di tabella (es. |---|---|) o riga di dati tabella (es. | a | b |)
+        if re.match(r"\s*\|", line):
+            i += 1
+            continue
+        result.append(line)
+        i += 1
+    # Rimuovi righe vuote consecutive eccessive
+    cleaned = re.sub(r"\n{3,}", "\n\n", "\n".join(result))
+    return cleaned.strip()
+
+
 def markdown_to_html_file(text: str) -> io.BytesIO:
     """Converte il testo markdown in un file HTML stilizzato, restituisce un buffer."""
     body = md_lib.markdown(
@@ -731,7 +774,9 @@ def markdown_to_html_file(text: str) -> io.BytesIO:
     timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
     html = HTML_TEMPLATE.format(body=body, timestamp=timestamp)
     buf = io.BytesIO(html.encode("utf-8"))
-    buf.name = f"artAgent_{datetime.now().strftime('%Y%m%d_%H%M')}.html"
+    title = _extract_title(text)
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    buf.name = f"{title}_{date_str}.html"
     return buf
 
 
