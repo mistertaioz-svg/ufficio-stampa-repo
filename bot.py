@@ -542,8 +542,54 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
     # Salva solo se ci sono state modifiche reali (non solo richieste di conferma)
     if any(log.startswith("✅") for log in logs):
         save_database(db)
+        # Controllo campi obbligatori per le candidature appena salvate
+        logs.extend(_check_candidatura_fields(logs, db))
 
     return logs
+
+
+def _check_candidatura_fields(logs: list[str], db: dict) -> list[str]:
+    """
+    Dopo ogni salvataggio che ha toccato 'candidature', controlla se l'ultima
+    candidatura modificata/aggiunta ha i campi obbligatori `link_call` e `contatto`.
+    Restituisce avvisi da aggiungere ai log (non blocca il salvataggio).
+    """
+    warnings = []
+    # Recupera le candidature appena toccate (sezione candidature)
+    if not any("candidature" in log for log in logs):
+        return warnings
+
+    candidature = db.get("candidature", [])
+    if not candidature:
+        return warnings
+
+    # Controlla l'ultima candidatura (quella appena aggiunta/aggiornata)
+    last = candidature[-1]
+    if not isinstance(last, dict):
+        return warnings
+
+    titolo = last.get("titolo") or "candidatura"
+    missing = []
+
+    if not last.get("link_call"):
+        missing.append("il *link della call* (post Instagram o pagina del sito)")
+
+    contatto = last.get("contatto")
+    contatto_vuoto = (
+        not contatto or
+        (isinstance(contatto, dict) and not any(contatto.values())) or
+        (isinstance(contatto, str) and not contatto.strip())
+    )
+    if contatto_vuoto:
+        missing.append("il *contatto dell'organizzatore* (email o profilo Instagram)")
+
+    if missing:
+        warnings.append(
+            f"⚠️ Per *{titolo}* mancano informazioni importanti:\n" +
+            "\n".join(f"  — {m}" for m in missing)
+        )
+
+    return warnings
 
 
 def _handle_add(db: dict, section: str, data) -> str:
