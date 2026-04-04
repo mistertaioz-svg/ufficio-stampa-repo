@@ -1380,6 +1380,16 @@ async def reload_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await update.message.reply_text("⚠️ Template non trovato nella repo.")
 
 
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Risponde alle foto con un messaggio esplicativo."""
+    if not is_authorized(update):
+        return
+    await update.message.reply_text(
+        "📷 Non posso elaborare immagini direttamente. "
+        "Se vuoi condividere documentazione, inviami un PDF oppure descrivimi il contenuto a parole."
+    )
+
+
 async def _call_claude(update: Update, user_text: str) -> None:
     """
     Logica centrale: invia user_text a Claude, applica gli aggiornamenti al database
