@@ -336,15 +336,38 @@ def init_database() -> None:
 
 
 def load_database() -> dict:
-    """Carica il database JSON dal volume persistente."""
+    """
+    Carica il database JSON dal volume persistente.
+    Se il file è corrotto o assente, prova a ripristinare dal backup locale
+    prima di creare un database vuoto.
+    """
     try:
         with open(DATABASE_PATH, "r", encoding="utf-8") as f:
             return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error("Errore caricamento database: %s — ricreo vuoto.", e)
-        empty = _empty_database()
-        save_database(empty)
-        return empty
+    except FileNotFoundError:
+        logger.error("Database non trovato (%s) — cerco backup…", DATABASE_PATH)
+    except json.JSONDecodeError as e:
+        logger.error("Database corrotto (%s) — cerco backup…", e)
+
+    # Prova il backup locale (non chiama save_database per non sovrascrivere il backup buono)
+    if BACKUP_PATH.exists():
+        try:
+            with open(BACKUP_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            logger.warning("Database ripristinato dal backup locale: %s", BACKUP_PATH)
+            tmp_path = DATABASE_PATH.with_suffix(".tmp")
+            VOLUME_DIR.mkdir(parents=True, exist_ok=True)
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            tmp_path.replace(DATABASE_PATH)
+            return data
+        except Exception as ex:
+            logger.error("Backup locale corrotto: %s — ricreo database vuoto.", ex)
+
+    logger.error("Nessun backup disponibile — creo database vuoto.")
+    empty = _empty_database()
+    save_database(empty)
+    return empty
 
 
 def _push_to_github(data: dict) -> bool:
