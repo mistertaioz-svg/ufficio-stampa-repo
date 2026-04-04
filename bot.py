@@ -108,6 +108,134 @@ def _empty_database() -> dict:
     }
 
 
+# ── Notifiche / date ─────────────────────────────────────────────────────────
+
+_IT_MONTHS = {
+    "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
+    "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8,
+    "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12,
+}
+
+
+def _parse_date(s: str) -> date | None:
+    """
+    Interpreta una stringa data in vari formati (ISO, italiano, slash).
+    Restituisce un oggetto date o None se non riesce.
+    """
+    if not s or not isinstance(s, str):
+        return None
+    s = s.strip()
+
+    # ISO: 2026-04-30
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").date()
+    except ValueError:
+        pass
+
+    # dd/mm/yyyy o dd/mm/yy
+    for fmt in ("%d/%m/%Y", "%d/%m/%y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            pass
+
+    # Italiano: "30 aprile 2026", "entro il 30 aprile 2026", "30 aprile"
+    sl = s.lower()
+    for month_name, month_num in _IT_MONTHS.items():
+        if month_name in sl:
+            nums = re.findall(r"\d+", sl)
+            if len(nums) >= 2:
+                # primo numero = giorno, ultimo = anno
+                day, year = int(nums[0]), int(nums[-1])
+                if year < 100:
+                    year += 2000
+                try:
+                    return date(year, month_num, day)
+                except ValueError:
+                    pass
+            elif len(nums) == 1:
+                # Solo anno (es. "aprile 2026") → ultimo giorno del mese
+                year = int(nums[0])
+                if year < 100:
+                    year += 2000
+                next_month = month_num % 12 + 1
+                next_year = year if month_num < 12 else year + 1
+                try:
+                    return date(next_year, next_month, 1) - timedelta(days=1)
+                except ValueError:
+                    pass
+            break
+
+    return None
+
+
+def _get_deadline_alerts(db: dict, today: date | None = None) -> list[dict]:
+    """
+    Scansiona il database e restituisce gli alert per tutte le scadenze trovate.
+    Ogni alert: {titolo, scadenza_str, giorni_mancanti, stato, sezione, dettaglio}
+
+    Sezioni controllate:
+    - candidature → campo "scadenza" (solo stati non conclusi)
+    """
+    if today is None:
+        today = date.today()
+
+    alerts = []
+
+    # ── candidature ──────────────────────────────────────────────────────────
+    stati_conclusi = {"scartata", "rifiutata", "accettata"}
+    for item in db.get("candidature", []):
+        if not isinstance(item, dict):
+            continue
+        stato = item.get("stato", "sconosciuto")
+        if stato in stati_conclusi:
+            continue
+        scadenza_str = item.get("scadenza", "")
+        if not scadenza_str:
+            continue
+        d = _parse_date(scadenza_str)
+        if d is None:
+            continue
+        giorni = (d - today).days
+        alerts.append({
+            "titolo": item.get("titolo", "?"),
+            "scadenza_str": scadenza_str,
+            "giorni_mancanti": giorni,
+            "stato": stato,
+            "sezione": "candidature",
+            "dettaglio": item.get("opera_candidata", ""),
+        })
+
+    return sorted(alerts, key=lambda x: x["giorni_mancanti"])
+
+
+def _format_alert(alert: dict, verbose: bool = False) -> str:
+    """Formatta un alert in una stringa leggibile per Telegram."""
+    g = alert["giorni_mancanti"]
+    titolo = alert["titolo"]
+    stato = alert["stato"]
+    scad = alert["scadenza_str"]
+    opera = alert.get("dettaglio", "")
+
+    if g < 0:
+        urgenza = f"⚠️ scaduta {abs(g)} giorni fa"
+    elif g == 0:
+        urgenza = "🔴 scade *OGGI*"
+    elif g == 1:
+        urgenza = "🔴 scade *domani*"
+    elif g <= 3:
+        urgenza = f"🔴 tra *{g} giorni* ({scad})"
+    elif g <= 7:
+        urgenza = f"🟡 tra *{g} giorni* ({scad})"
+    else:
+        urgenza = f"🟢 tra *{g} giorni* ({scad})"
+
+    line = f"• *{titolo}* — {urgenza}\n  Stato: {stato}"
+    if opera and verbose:
+        line += f" | Opera: {opera}"
+    return line
+
+
 def _fetch_github_database() -> dict | None:
     """
     Scarica il database dal branch 'data' di GitHub.
