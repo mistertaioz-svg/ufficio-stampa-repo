@@ -529,7 +529,8 @@ def apply_db_updates(response_text: str, db: dict) -> list[str]:
             logger.exception("Errore applicando aggiornamento DB")
             logs.append(f"⚠️ Errore: {e}")
 
-    if logs:
+    # Salva solo se ci sono state modifiche reali (non solo richieste di conferma)
+    if any(log.startswith("✅") for log in logs):
         save_database(db)
 
     return logs
