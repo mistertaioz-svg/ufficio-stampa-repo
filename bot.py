@@ -1518,32 +1518,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # ── Messaggio normale → Claude ────────────────────────────────────────────
     try:
         await update.message.chat.send_action("typing")
-
-        db = load_database()
-        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(database=database_summary(db))
-        messages = build_messages(user_text)
-
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            system=system_prompt,
-            messages=messages,
-        )
-
-        assistant_text = response.content[0].text
-
-        # Applica aggiornamenti al database (salvati sul volume persistente)
-        update_logs = apply_db_updates(assistant_text, db)
-
-        clean_text = strip_db_update_tags(assistant_text)
-
-        if update_logs:
-            clean_text += "\n\n" + "\n".join(update_logs)
-
-        record_assistant(assistant_text)
-
-        await send_long_message(update, clean_text)
-
+        await _call_claude(update, user_text)
     except anthropic.APIError as e:
         logger.error("Errore API Anthropic: %s", e)
         await update.message.reply_text(
