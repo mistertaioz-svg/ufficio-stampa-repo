@@ -155,16 +155,24 @@ def _parse_date(s: str) -> date | None:
                 except ValueError:
                     pass
             elif len(nums) == 1:
-                # Solo anno (es. "aprile 2026") → ultimo giorno del mese
-                year = int(nums[0])
-                if year < 100:
-                    year += 2000
-                next_month = month_num % 12 + 1
-                next_year = year if month_num < 12 else year + 1
-                try:
-                    return date(next_year, next_month, 1) - timedelta(days=1)
-                except ValueError:
-                    pass
+                n = int(nums[0])
+                if 1 <= n <= 31:
+                    # Solo giorno (es. "30 aprile") → assume anno corrente
+                    try:
+                        return date(date.today().year, month_num, n)
+                    except ValueError:
+                        pass
+                else:
+                    # Solo anno (es. "aprile 2026") → ultimo giorno del mese
+                    year = n
+                    if year < 100:
+                        year += 2000
+                    next_month = month_num % 12 + 1
+                    next_year = year if month_num < 12 else year + 1
+                    try:
+                        return date(next_year, next_month, 1) - timedelta(days=1)
+                    except ValueError:
+                        pass
             break
 
     return None
