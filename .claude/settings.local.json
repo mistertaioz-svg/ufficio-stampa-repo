@@ -21,7 +21,8 @@
       "Bash(do echo:*)",
       "Bash(python3 -c \":*)",
       "Bash(/dev/null done:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pip3 install:*)"
     ]
   },
   "hooks": {
