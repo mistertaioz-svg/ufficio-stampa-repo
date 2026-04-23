@@ -23,7 +23,9 @@
       "Bash(/dev/null done:*)",
       "Bash(python3:*)",
       "Bash(pip3 install:*)",
-      "Bash(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,duration,nb_frames -of default \"/Users/mirqotio_air/Desktop/VideoCiraci/IMG_1120.MOV\")"
+      "Bash(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,duration,nb_frames -of default \"/Users/mirqotio_air/Desktop/VideoCiraci/IMG_1120.MOV\")",
+      "Bash(ffmpeg -version)",
+      "Bash(ffmpeg -i /Users/mirqotio_air/Desktop/VideoCiraci/output.mp4 -c:v libx264 -crf 18 -preset slow /Users/mirqotio_air/Desktop/VideoCiraci/output_h264.mp4 -y)"
     ]
   },
   "hooks": {
