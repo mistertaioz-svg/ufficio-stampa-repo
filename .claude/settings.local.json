@@ -22,7 +22,8 @@
       "Bash(python3 -c \":*)",
       "Bash(/dev/null done:*)",
       "Bash(python3:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(ffprobe -v error -select_streams v:0 -show_entries stream=width,height,r_frame_rate,duration,nb_frames -of default \"/Users/mirqotio_air/Desktop/VideoCiraci/IMG_1120.MOV\")"
     ]
   },
   "hooks": {
