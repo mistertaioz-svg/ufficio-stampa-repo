@@ -1390,7 +1390,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 
-async def _call_claude(update: Update, user_text: str) -> None:
+async def _call_claude(update: Update, user_text: str, max_tokens: int = 4096) -> None:
     """
     Logica centrale: invia user_text a Claude, applica gli aggiornamenti al database
     e manda la risposta all'utente.
@@ -1402,7 +1402,7 @@ async def _call_claude(update: Update, user_text: str) -> None:
 
     response = client.messages.create(
         model=MODEL,
-        max_tokens=4096,
+        max_tokens=max_tokens,
         system=system_prompt,
         messages=messages,
     )
