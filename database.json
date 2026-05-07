@@ -367,15 +367,16 @@
       "ente": "CIFRA (media art platform)",
       "luogo": "Internazionale (online)",
       "scadenza": "8 maggio 2026",
-      "stato": "in attesa (opera incompleta)",
+      "stato": "in preparazione",
       "tipo": "Open call arte digitale",
       "tema": "RestArt Reality",
-      "note": "In attesa del completamento dell'audio di p[ai]n. Call per arte digitale, 5 premi da 1000€, perfetta per p[ai]n una volta finita.",
+      "note": "5 premi da 1000€. Accettano AI art, video senza limiti durata. Upload su piattaforma cifra.com richiesto. Winner announcement: 1 giugno 2026.",
       "data_inserimento": "2026-04-03",
       "opera_candidata": "p[ai]n",
       "contatto": {
         "sito": "cifra.com"
-      }
+      },
+      "link_call": "https://promo.cifra.com/terms_opencall"
     },
     {
       "titolo": "ContaminAzioni Festival - Glitch as Becoming",
