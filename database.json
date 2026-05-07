@@ -17,7 +17,7 @@
   "biografia": {
     "statement": "Il mio lavoro nasce dalla volontà di trovare nuovi modi per raccontare come viviamo il mondo e come percepiamo che gli altri lo vivano intorno a noi. Costruisco spazi in cui le persone si fermano, incontrano qualcosa di inaspettato e portano via con sé una riflessione che prima non avevano.",
     "bio": "Mirco Tiozzo (Mirqotio) è un artista e creative technologist basato a Milano. Lavora tra arte generativa, installazioni interattive e intelligenza artificiale. La sua ricerca parte da una fascinazione per la tecnologia come forza che cambia il modo in cui ci percepiamo e ci relazioniamo al mondo. Il suo lavoro spazia dalle installazioni site-specific alla performance, utilizzando strumenti come il real-time AI mapping per creare esperienze in cui tecnologia e presenza umana si incontrano. Ha esposto in Italia e a livello internazionale, tra cui il CURRENTS New Media Festival (Santa Fe) e il RENDR Festival (Belfast).",
-    "identita_artistica": "La tecnologia per Mirco è empowering e democratica, l'unica realtà alternativa che conosciamo. C'è sempre qualcosa di nuovo da imparare e questo genera uno stupore costante. Il suo approccio è pratico e intuitivo, fondato sulla sperimentazione continua e sul confronto con ciò che lo circonda. Non teorico. Non c'è differenza tra arte personale e lavoro per clienti, tutto è espressione. Quello che lo rende fiero è quando le persone percepiscono esattamente quello che l'opera dovrebbe trasmettere, si fermano per la straordinarietà e restano per la profondità del concept. Attualmente si trova in una fase di professionalizzazione: consolidare competenze, costruire una base solida. Molte direzioni possibili, nessuna ancora definitiva."
+    "identita_artistica": "La tecnologia per Mirco è empowering e democratica, l'unica realtà alternativa che conosciamo. C'è sempre qualcosa di nuovo da imparare e questo genera uno stupore costante. Il suo approccio è pratico e intuitivo, fondato sulla sperimentazione continua e sul confronto con ciò che lo circonda. Non teorico. Quello che lo rende fiero è quando le persone percepiscono esattamente quello che l'opera dovrebbe trasmettere, si fermano per la straordinarietà e restano per la profondità del concept. La sua ricerca artistica si concentra sull'allucinazione generativa come forma di verità dell'IA: non l'immagine perfetta che imita l'umano, ma l'errore che rivela la natura statistica della macchina. Attualmente si trova in una fase di consolidamento post-laurea: trasformare la ricerca teorica in pratica artistica matura."
   },
   "cv_artistico": {
     "formazione": [
@@ -38,7 +38,7 @@
         "istituzione": "NABA Milano",
         "tipo": "Laurea triennale",
         "anni": "2022–2026",
-        "note": "Tesi su IA generativa"
+        "note": "Tesi: 'Allucinazione Generativa: Limiti Ontologici e Potenzialità Visive dell'Intelligenza Artificiale'. Relatori: Prof. Vincenzo Cuccia, Prof.ssa Marianna Schivardi"
       }
     ],
     "mostre": [
@@ -253,6 +253,16 @@
     {
       "tema": "Intelligenza artificiale come territorio creativo",
       "descrizione": "L'IA come strumento e materia espressiva allo stesso tempo. Qualcosa di nuovo che vale la pena interrogare, comprendere nella sua essenza, e usare consapevolmente."
+    },
+    {
+      "tema": "Allucinazione generativa come linguaggio artistico",
+      "descrizione": "L'errore dell'IA non come difetto tecnico ma come rivelazione ontologica. L'allucinazione come unico momento in cui la macchina mostra la sua vera natura di sistema statistico, offrendo uno sguardo puro e disincarnato sui dati dell'Inconscio Collettivo Digitale.",
+      "data_inserimento": "2026-05-07"
+    },
+    {
+      "tema": "Internet come Inconscio Collettivo Digitale",
+      "descrizione": "Interpretazione dell'Internet come manifestazione tangibile dell'Inconscio Collettivo junghiano. La rete non più come archivio inerte ma come deposito pulsante di simboli, memorie e volontà umane esternalizzate, accessibile attraverso l'IA come protesi cognitiva.",
+      "data_inserimento": "2026-05-07"
     }
   ],
   "lavori": [
