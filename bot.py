@@ -1475,7 +1475,8 @@ async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     )
 
     try:
-        await _call_claude(update, user_text)
+        # PDF lunghi possono richiedere risposte più ampie (più db_update blocks)
+        await _call_claude(update, user_text, max_tokens=8192)
     except anthropic.APIError as e:
         logger.error("Errore API Anthropic (PDF): %s", e)
         await update.message.reply_text(
